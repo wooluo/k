@@ -24,31 +24,50 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure Pages site exists
+      - name: Diagnose and create Pages site
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          set -x
-          code=$(curl -s -o /tmp/pages_get.json -w '%{http_code}' \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${REPO}/pages")
-          echo "GET pages -> ${code}"
-          cat /tmp/pages_get.json || true
-          if [ "${code}" = "404" ]; then
-            code2=$(curl -s -o /tmp/pages_post.json -w '%{http_code}' \
+          {
+            echo "=== repo: ${REPO}"
+            echo "=== token scopes:"
+            curl -sI -H "Authorization: Bearer *** | grep -iE '^(x-oauth-scopes|x-accepted-oauth-scopes)' || echo none
+            echo "=== GET /pages:"
+            curl -sv -o /tmp/get.json -w 'HTTP %{http_code}\n' \
+              -H "Authorization: Bearer *** \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${REPO}/pages" 2>&1
+            cat /tmp/get.json; echo
+            echo "=== POST /pages (build_type=workflow):"
+            curl -s -o /tmp/post1.json -w 'HTTP %{http_code}\n' \
               -X POST \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Authorization: Bearer *** \
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/repos/${REPO}/pages" \
-              -d '{"build_type":"workflow"}')
-            echo "POST pages -> ${code2}"
-            cat /tmp/pages_post.json || true
-          fi
+              -d '{"build_type":"workflow"}'
+            cat /tmp/post1.json; echo
+            echo "=== POST /pages (source=main):"
+            curl -s -o /tmp/post2.json -w 'HTTP %{http_code}\n' \
+              -X POST \
+              -H "Authorization: Bearer *** \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${REPO}/pages" \
+              -d '{"source":{"branch":"main","path":"/"}}'
+            cat /tmp/post2.json; echo
+          } > pages-diagnosis.txt 2>&1
+          cat pages-diagnosis.txt
+
+      - name: Upload diagnosis artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-diagnosis
+          path: pages-diagnosis.txt
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: false
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
