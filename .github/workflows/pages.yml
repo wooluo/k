@@ -24,6 +24,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Ensure Pages site exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -x
+          code=$(curl -s -o /tmp/pages_get.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/pages")
+          echo "GET pages -> ${code}"
+          cat /tmp/pages_get.json || true
+          if [ "${code}" = "404" ]; then
+            code2=$(curl -s -o /tmp/pages_post.json -w '%{http_code}' \
+              -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${REPO}/pages" \
+              -d '{"build_type":"workflow"}')
+            echo "POST pages -> ${code2}"
+            cat /tmp/pages_post.json || true
+          fi
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
