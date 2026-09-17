@@ -32,17 +32,17 @@ jobs:
           {
             echo "=== repo: ${REPO}"
             echo "=== token scopes:"
-            curl -sI -H "Authorization: Bearer *** | grep -iE '^(x-oauth-scopes|x-accepted-oauth-scopes)' || echo none
+            curl -sI -H "Authorization: Bearer ${GH_TOKEN} | grep -iE '^(x-oauth-scopes|x-accepted-oauth-scopes)' || echo none
             echo "=== GET /pages:"
             curl -sv -o /tmp/get.json -w 'HTTP %{http_code}\n' \
-              -H "Authorization: Bearer *** \
+              -H "Authorization: Bearer ${GH_TOKEN} \
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/repos/${REPO}/pages" 2>&1
             cat /tmp/get.json; echo
             echo "=== POST /pages (build_type=workflow):"
             curl -s -o /tmp/post1.json -w 'HTTP %{http_code}\n' \
               -X POST \
-              -H "Authorization: Bearer *** \
+              -H "Authorization: Bearer ${GH_TOKEN} \
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/repos/${REPO}/pages" \
               -d '{"build_type":"workflow"}'
@@ -50,7 +50,7 @@ jobs:
             echo "=== POST /pages (source=main):"
             curl -s -o /tmp/post2.json -w 'HTTP %{http_code}\n' \
               -X POST \
-              -H "Authorization: Bearer *** \
+              -H "Authorization: Bearer ${GH_TOKEN} \
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/repos/${REPO}/pages" \
               -d '{"source":{"branch":"main","path":"/"}}'
