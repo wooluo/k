@@ -721,8 +721,8 @@ function shade(hex,mul){
 }
 const TEU_SAFE=TAU; // 别名(防手误)
 function genChunk(idx){
-  const c=document.createElement('canvas');c.width=VW;c.height=VH;
-  const g=c.getContext('2d');
+  const c=document.createElement('canvas');c.width=VW*2;c.height=VH*2;
+  const g=c.getContext('2d');g.scale(2,2);
   const row0=idx*ROWS;
   // 主题分段背景基色: 0郊野 1城市 2工业区 3公园 4山野 5桥区(以河为景)
   const seg=segAt(row0); // 以chunk首行为准
@@ -881,7 +881,7 @@ function chunkFor(idx){
 }
 function drawTerrain(){
   const k0=Math.floor(camY/VH);
-  for(let k=k0;k<=k0+1;k++)ctx.drawImage(chunkFor(k),0,Math.round(k*VH-camY));
+  for(let k=k0;k<=k0+1;k++)ctx.drawImage(chunkFor(k),0,Math.round(k*VH-camY),VW,VH);
 }
 function avoidWater(x,y){
   const wx=riverXAt(y+camY);
