@@ -60,8 +60,9 @@ function lsSet(k,v){try{localStorage.setItem(k,v);}catch(_){}}
 const G={mode:'title',level:1,score:0,hi:+(lsGet('rr_hs')||0),
   rescued:0,t:0,timeIn:0,phase:'waves',phaseT:0,spawnT:1.5,survT:2.5,bag:[],
   paused:false,muted:lsGet('rr_mute')==='1',shake:0,flash:0,dmgFlash:0,
-  overT:0,diff:1,bombFx:null,toasts:[],kills:0};
+  overT:0,diff:1,bombFx:null,toasts:[],kills:0,rescueStreak:0};
 let enemies=[],pBullets=[],eBullets=[],eMissiles=[],pHoming=[],pickups=[],survivors=[],parts=[],floats=[];
+let wingmen=[]; // 僚机(连续救援召唤, 可挡弹可被打掉)
 let boss=null,camY=0,mouseSeen=false;
 
 const player={x:VW/2,y:VH-150,tx:VW/2,ty:VH-150,px:VW/2,hp:5,maxHp:5,inv:0,fireT:0,power:1,alive:true,missT:0};
@@ -508,9 +509,10 @@ function updEnemies(dt){
         if(e.mode==='idle'&&e.mt<=0&&onScreen){e.mode='warn';e.mt=0.9;e.lock=angTo(e.x,e.y,player.x,player.y);}
         else if(e.mode==='warn'&&e.mt<=0){e.mode='fire';e.mt=0.55;beep(1400,0.1,'sawtooth',0.1,300);}
         else if(e.mode==='fire'&&e.mt<=0){e.mode='idle';e.mt=rand(2,2.8);}
-        if(e.mode==='fire'&&player.inv<=0){
+        if(e.mode==='fire'){
           const ex=e.x+Math.cos(e.lock)*1000,ey=e.y+Math.sin(e.lock)*1000;
-          if(segDist(player.x,player.y,e.x,e.y,ex,ey)<14+11)hurtPlayer();
+          if(player.inv<=0&&segDist(player.x,player.y,e.x,e.y,ex,ey)<14+11)hurtPlayer();
+          for(const w of Array.from(wingmen)){if(segDist(w.x,w.y,e.x,e.y,ex,ey)<14+9){hurtWingman(w);break;}}
         }
         break;
     }
@@ -553,6 +555,7 @@ function updEMissiles(dt){
     if(Math.random()<0.6)parts.push({x:m.x,y:m.y,vx:rand(-15,15),vy:rand(-15,15),life:0.35,max:0.35,size:3.5,c:'#9aa4b5',type:'sq'});
     let gone=false;
     if(m.t>6.5){explode(m.x,m.y,8);gone=true;}
+    if(!gone)for(const w of wingmen){if(w.inv<=0&&dist2(m.x,m.y,w.x,w.y)<(11+9)*(11+9)){hurtWingman(w);explode(m.x,m.y,10);gone=true;break;}}
     if(!gone&&player.inv<=0&&dist2(m.x,m.y,player.x,player.y)<(11+11)*(11+11)){hurtPlayer();explode(m.x,m.y,10);gone=true;}
     if(gone||m.y>VH+40||m.y<-60||m.x<-60||m.x>VW+60)eMissiles.splice(i,1);
   }
@@ -658,6 +661,7 @@ function updBoss(dt){
     const bx=boss.x+b.dx;
     if(b.fire<=0||bx<20||bx>VW-20){boss.beams.splice(i,1);continue;}
     if(player.inv<=0&&Math.abs(player.x-bx)<15+11)hurtPlayer();
+    for(const w of Array.from(wingmen)){if(Math.abs(w.x-bx)<15+9){hurtWingman(w);break;}}
   }
 }
 function hitBoss(dmg){
@@ -694,11 +698,80 @@ function updSurvivors(dt){
         G.rescued++;G.score+=500;
         floater(player.x,player.y-40,'+500 救援成功','#7dffa0');
         if(G.rescued%8===0&&player.hp<player.maxHp){player.hp++;toast('救援嘉奖 +1 ❤');SND.heart();}
+        // 连续救援2人 → 召唤/修复僚机
+        G.rescueStreak++;
+        if(G.rescueStreak>=2){
+          G.rescueStreak=0;
+          if(wingmen.length<2){
+            spawnWingmen(2-wingmen.length);
+            toast(wingmen.length===2?'僚机队参战! 自动开火+挡弹':'僚机增援抵达!');
+          }else{
+            for(const w of wingmen)w.hp=2;
+            toast('连救2人 · 僚机修复完成!');
+          }
+        }else if(wingmen.length<2){
+          floater(player.x,player.y-64,'连救 '+G.rescueStreak+'/2 召唤僚机','#8ff7ff');
+        }
       }
     }
   }
 }
 function lerp0(a,b,k){return a+(b-a)*Math.min(1,k);}
+
+/* ================= 僚机(连续救援2人召唤) ================= */
+function spawnWingmen(n){
+  for(let k=0;k<n;k++){
+    if(wingmen.length>=2)break;
+    const side=wingmen.some(w=>w.side===0)?1:0;
+    wingmen.push({x:player.x+(side?52:-52),y:player.y+56,px:player.x,side,hp:2,born:0,
+      fireT:rand(0.2,0.5),missT:rand(1.4,2.4),inv:0.9});
+    spark(player.x+(side?52:-52),player.y+56,12,['#8ff7ff','#ffffff','#7dffa0'],160);
+  }
+  SND.pick();
+}
+function hurtWingman(w){
+  if(w.inv>0)return false;
+  w.hp--;w.inv=0.7;
+  if(w.hp<=0){
+    explode(w.x,w.y,16);SND.boom();
+    const idx=wingmen.indexOf(w);if(idx>=0)wingmen.splice(idx,1);
+    toast('僚机被击落! 连救2人可召回');
+    floater(w.x,w.y-20,'僚机被击落!','#ff5a7a');
+  }else{
+    spark(w.x,w.y,9,['#8ff7ff','#ffffff'],170);
+    SND.ehit();
+    floater(w.x,w.y-20,'僚机挡下攻击!','#ffb14d');
+  }
+  return true;
+}
+function updWingmen(dt){
+  if(!player.alive)return;
+  for(const w of wingmen){
+    w.born=Math.min(1,w.born+dt*2);
+    w.inv=Math.max(0,w.inv-dt);
+    const tx=player.x+(w.side?44:-44)+Math.sin(G.t*2.1+w.side*2.6)*7;
+    const ty=player.y+30+Math.sin(G.t*2.7+w.side*1.9)*6;
+    const k=1-Math.exp(-9*dt);
+    w.x+=(tx-w.x)*k;w.y+=(ty-w.y)*k;
+    w.x=clamp(w.x,16,VW-16);w.y=clamp(w.y,44,VH-16);
+    // 自动机枪
+    w.fireT-=dt;
+    if(w.fireT<=0){
+      w.fireT=0.34;
+      pBullets.push({x:w.x,y:w.y-12,vx:0,vy:-700});
+      parts.push({x:w.x,y:w.y-14,vx:0,vy:-60,life:0.05,max:0.05,size:6,c:'#cfefff',type:'sq'});
+    }
+    // 定期追踪导弹(与玩家道具弹同款自寻的, 伤害6)
+    w.missT-=dt;
+    if(w.missT<=0){
+      w.missT=rand(2.6,3.4);
+      pHoming.push({x:w.x,y:w.y+4,a:-Math.PI/2,sp:260,t:0});
+      SND.missile();
+    }
+    // 受损冒烟
+    if(w.hp<=1&&Math.random()<dt*8)parts.push({x:w.x+rand(-4,4),y:w.y-4,vx:rand(-8,8),vy:rand(-30,-12),life:0.5,max:0.5,size:rand(3,5),c:'#5c6472',type:'sq'});
+  }
+}
 
 /* ================= 道具 ================= */
 function useItem(id){
@@ -763,7 +836,7 @@ function hurtPlayer(){
     if(items.shield.hits<=0)items.shield.t=0;
     return;
   }
-  player.hp--;player.inv=1.6;
+  player.hp--;player.inv=1.6;G.rescueStreak=0;
   G.dmgFlash=0.5;G.shake=Math.min(16,G.shake+10);
   SND.hit();
   for(let i=eBullets.length-1;i>=0;i--){
@@ -865,6 +938,7 @@ function update(dt){
     }
   }
   updPlayer(dt);
+  updWingmen(dt);
   updEnemies(dt);
   updEMissiles(dt);
   updBoss(dt);
@@ -913,6 +987,12 @@ function update(dt){
     if(!b)continue; // hurtPlayer 玩家阵亡时会清空全屏弹幕
     b.x+=b.vx*dt;b.y+=b.vy*dt;
     if(b.y>VH+20||b.y<-30||b.x<-20||b.x>VW+20){eBullets.splice(i,1);continue;}
+    // 僚机挡弹
+    let wingHit=false;
+    for(const w of wingmen){
+      if(dist2(b.x,b.y,w.x,w.y)<(b.r+9)*(b.r+9)){hurtWingman(w);wingHit=true;break;}
+    }
+    if(wingHit){eBullets.splice(i,1);continue;}
     if(player.alive&&player.inv<=0&&dist2(b.x,b.y,player.x,player.y)<(b.r+10)*(b.r+10)){
       eBullets.splice(i,1);hurtPlayer();
       if(!player.alive)break;
@@ -924,6 +1004,14 @@ function update(dt){
       if(dist2(e.x,e.y,player.x,player.y)<(e.r+12)*(e.r+12)){hurtPlayer();damageEnemy(e,6);break;}
     }
     if(boss&&boss.state!=='dying'&&Math.abs(player.x-boss.x)<150+10&&Math.abs(player.y-boss.y)<55+10)hurtPlayer();
+  }
+  // 敌机撞击僚机
+  for(const w of Array.from(wingmen)){
+    for(const e of enemies){
+      if(dist2(e.x,e.y,w.x,w.y)<(e.r+9)*(e.r+9)){hurtWingman(w);damageEnemy(e,6);break;}
+    }
+    if(!wingmen.includes(w))continue;
+    if(boss&&boss.state!=='dying'&&Math.abs(w.x-boss.x)<150+8&&Math.abs(w.y-boss.y)<55+8)hurtWingman(w);
   }
   // 特效衰减
   G.shake=Math.max(0,G.shake-30*dt);
@@ -1114,6 +1202,30 @@ function drawHoming(h){
   ctx.fillStyle='#5ad0ff';ctx.beginPath();ctx.moveTo(0,-11);ctx.lineTo(2.5,-7);ctx.lineTo(-2.5,-7);ctx.closePath();ctx.fill();
   const f=rand(3,6);
   ctx.fillStyle='#ffe66d';ctx.beginPath();ctx.moveTo(-1.5,5);ctx.lineTo(1.5,5);ctx.lineTo(0,5+f);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+function drawWingman(w){
+  if(!player.alive)return;
+  if(w.inv>0&&w.born>=1&&Math.floor(G.t*18)%2===0)return;
+  const tilt=clamp((w.x-w.px)*0.03,-0.35,0.35);w.px=w.x;
+  ctx.save();ctx.translate(w.x,w.y);ctx.rotate(tilt);
+  const s=0.62*(0.45+0.55*w.born);ctx.scale(s,s);
+  // 尾焰
+  const f=6+Math.sin(G.t*40+w.side*2)*3;
+  ctx.fillStyle='#8ff7ff';ctx.beginPath();ctx.moveTo(-3,11);ctx.lineTo(3,11);ctx.lineTo(0,11+f);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#ffd24d';ctx.beginPath();ctx.moveTo(-1.5,11);ctx.lineTo(1.5,11);ctx.lineTo(0,11+f*0.55);ctx.closePath();ctx.fill();
+  // 主翼
+  ctx.fillStyle='#9fe8c8';
+  ctx.beginPath();ctx.moveTo(0,-2);ctx.lineTo(7,4);ctx.lineTo(16,10);ctx.lineTo(10,13);ctx.lineTo(3,8);
+  ctx.lineTo(-3,8);ctx.lineTo(-10,13);ctx.lineTo(-16,10);ctx.lineTo(-7,4);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#6fae8f';ctx.fillRect(-15,9,6,3);ctx.fillRect(9,9,6,3);
+  // 机身
+  ctx.fillStyle='#dcf6ea';
+  ctx.beginPath();ctx.moveTo(0,-19);ctx.lineTo(4,-4);ctx.lineTo(4,10);ctx.lineTo(-4,10);ctx.lineTo(-4,-4);ctx.closePath();ctx.fill();
+  // 座舱
+  ctx.fillStyle='#7fd4ff';ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(2.4,-3);ctx.lineTo(-2.4,-3);ctx.closePath();ctx.fill();
+  // 重伤警示灯
+  if(w.hp<=1&&Math.floor(G.t*6)%2){ctx.fillStyle='#ff5a5a';ctx.fillRect(-2,-13,4,3);}
   ctx.restore();
 }
 function drawBoss(){
@@ -1375,6 +1487,7 @@ function render(){
   for(const b of pBullets)ctx.drawImage(SPR.pb,b.x-3,b.y-9,6,18);
   ctx.restore();
   for(const h of pHoming)drawHoming(h);
+  for(const w of wingmen)drawWingman(w);
   drawPlayerShip();
   drawPlayerLaser();
   // 敌弹(最上层保持可见)
@@ -1465,14 +1578,15 @@ function drawTitle(){
   const lines=[
     ['鼠标移动 / 手指拖动','控制战机 · 自动开火'],
     ['在幸存者上空悬停','圆环转满即救援成功'],
+    ['连续救援 2 人','召唤僚机 · 挡弹+导弹'],
     ['道具: 1护盾 2炸弹','3激光 4追踪导弹'],
     ['击败关底 BOSS (❤x2000)','进入下一关'],
   ];
-  let y=380;
+  let y=368;
   for(const [a,b] of lines){
     txtC(a,VW/2,y,10,'#cfd6e4','center');
     txtC(b,VW/2,y+18,10,'#7a95b5','center');
-    y+=46;
+    y+=42;
   }
   txtC('最高分 '+pad(G.hi,7),VW/2,590,10,'#ffd24d','center');
   if(Math.floor(G.t*2)%2)txtC('- 点击画面开始 -',VW/2,660,13,'#7dffa0','center');
@@ -1491,9 +1605,9 @@ function drawOver(){
 /* ================= 流程 ================= */
 function startGame(){
   enemies=[];pBullets=[];eBullets=[];eMissiles=[];pHoming=[];pickups=[];survivors=[];parts=[];floats=[];
-  boss=null;
+  boss=null;wingmen=[];
   Object.assign(G,{mode:'play',level:1,score:0,rescued:0,timeIn:0,phase:'waves',phaseT:0,
-    spawnT:1.2,survT:2.5,paused:false,shake:0,flash:0,dmgFlash:0,overT:0,diff:1,bombFx:null,toasts:[],kills:0});
+    spawnT:1.2,survT:2.5,paused:false,shake:0,flash:0,dmgFlash:0,overT:0,diff:1,bombFx:null,toasts:[],kills:0,rescueStreak:0});
   Object.assign(player,{x:VW/2,y:VH-150,tx:VW/2,ty:VH-150,px:VW/2,hp:5,inv:2,fireT:0,power:1,alive:true,missT:0});
   items.shield.stock=1;items.shield.t=0;items.shield.hits=0;
   items.bomb.stock=2;items.laser.stock=1;items.laser.t=0;items.missile.stock=1;items.missile.t=0;
@@ -1504,6 +1618,8 @@ function startGame(){
 }
 function gameOver(){
   G.mode='over';G.overT=0;
+  for(const w of wingmen)explode(w.x,w.y,14);
+  wingmen.length=0;
   lsSet('rr_hs',''+G.hi);
 }
 
