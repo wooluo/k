@@ -1867,8 +1867,9 @@ function updPickups(dt){
     const p=pickups[i];p.t+=dt;
     p.y+=62*dt;
     const d2=dist2(p.x,p.y,player.x,player.y);
-    if(d2<110*110){p.x=lerp0(p.x,player.x,dt*6);p.y=lerp0(p.y,player.y,dt*6);}
-    if(d2<30*30){
+    const sup=!'ABCDEFG'.includes(p.type); // 补给磁吸; 字母武器须主动撞取(防被动乱切枪)
+    if(sup&&d2<110*110){p.x=lerp0(p.x,player.x,dt*6);p.y=lerp0(p.y,player.y,dt*6);}
+    if(d2<(sup?30:24)*(sup?30:24)){
       pickups.splice(i,1);
       if(G.phase==='bonus')G.bonusGot++;
       applyPickup(p.type);continue;
