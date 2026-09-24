@@ -1087,7 +1087,7 @@ function startLevel(n){
   G.objP={score:0,color:0,ice:0,box:0,chain:0,gems:0};
   G.sel=null;G.targetItem=null;G.swapSel=null;G.hintPair=null;G.hintT=0;G.busy=false;
   G.pendingRockets=[];G.pendingBolts=[];G.falling=0;G.settleWaits=[];G.frenzyUntil=0;G.rainbowUntil=0;
-  F.clear();
+  F.clear();TWEENS.length=0;
   S.stats.games++;saveGame();
   showScreen('game');
   sizeBoard();
@@ -1334,25 +1334,25 @@ async function processGroups(groups,chain){
 /* ---- 重力动画 ---- */
 async function applyGravityAnim(){
   const{moves,spawns}=applyGravityModel(G.grid,Math.random);
-  for(const m of moves){m.gem.ry=m.fromR;m.gem.vy=0;G.falling++}
-  for(const s of spawns)G.falling++;
+  for(const m of moves){m.gem.ry=m.fromR;m.gem.vy=0;m.gem.falling=true;G.falling++}
+  for(const s of spawns)s.gem.falling=true,G.falling++;
   // 帧循环中积分下落（见 physicsStep）；2.5 秒保险超时防止卡死
   await Promise.race([settlePromise(),wait(2500)]);
   await wait(50);
 }
 function physicsStep(dt){
   if(!G.grid)return;
-  if(G.falling>0){
-    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-      const gem=G.grid[r][c].gem;
-      if(!gem)continue;
-      if(gem.ry<r-0.001||gem.vy>0){
-        gem.vy+=26*dt;
-        gem.ry=Math.min(r,gem.ry+gem.vy*dt);
-        if(gem.ry>=r){gem.ry=r;gem.vy=0;gem.squash=.25;G.falling--;flushSettle()}
-      }else if(gem.ry>r+0.001){gem.ry=r}
-      if(gem.squash>0)gem.squash=Math.max(0,gem.squash-dt*2);
-    }
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const gem=G.grid[r][c].gem;
+    if(!gem)continue;
+    if(gem.falling){ // 只处理重力登记的下落宝石，与交换 tween 隔离
+      gem.vy+=26*dt;
+      gem.ry=Math.min(r,gem.ry+gem.vy*dt);
+      if(gem.ry>=r-1e-4){
+        gem.ry=r;gem.vy=0;gem.squash=.25;gem.falling=false;G.falling--;
+        if(G.falling<=0)flushSettle();
+      }
+    }else if(gem.squash>0)gem.squash=Math.max(0,gem.squash-dt*2);
   }
 }
 /* ---- 主连锁流程 ---- */
@@ -1419,6 +1419,17 @@ async function animSwapCells(a,b){
   if(gb)ps.push(tween(gb,{rx:a.c,ry:a.r},.16*spd*1000));
   await Promise.all(ps);
 }
+// 所有宝石回到各自所在格的渲染坐标（用于换回/兜底对齐）
+function animToOwnCells(dur=160){
+  const spd=S.settings.anim?1:.5;
+  const ps=[];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const gem=G.grid[r][c].gem;
+    if(gem&&(Math.abs(gem.rx-c)>.005||Math.abs(gem.ry-r)>.005))
+      ps.push(tween(gem,{rx:c,ry:r},dur*spd,easeOutBack));
+  }
+  return Promise.all(ps);
+}
 function specialPairSet(a,b){
   const ga=G.grid[a.r][a.c].gem,gb=G.grid[b.r][b.c].gem;
   if(!ga||!gb)return null;
@@ -1483,16 +1494,17 @@ async function trySwap(a,b){
       await cascade(groups,true);
     }else{
       AU.sInvalid();
-      swapCells(a,b);
-      await animSwapCells(a,b);
+      swapCells(a,b); // 换回格子，再让两颗宝石动画回到各自原位
+      await animToOwnCells(160);
     }
   }
-  G.busy=false;
   await afterStable();
+  G.busy=false;
 }
 /* ---- 阶段结算 ---- */
 async function afterStable(){
   if(G.state!=='play')return;
+  await animToOwnCells(120); // 自愈：确保所有宝石渲染坐标与所在格一致
   updateHUD();
   if(objDone()){await victory();return}
   await mechTick();
@@ -1554,10 +1566,19 @@ async function doShuffle(auto){
   toast(auto?'🔀 没有可消除的组合，自动重排！':'🔀 棋盘已重新排列','🔀');
   const gems=[];
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const g=G.grid[r][c].gem;if(g)gems.push(g)}
-  await Promise.race([Promise.all(gems.map(g=>tween(g,{ry:g.ry-0.4},120))),wait(140)]);
+  await Promise.race([Promise.all(gems.map(g=>tween(g,{ry:g.ry-0.4},120))),wait(400)]);
+  forceSettleTweens();
   shuffleModel(G.grid,Math.random);
-  await Promise.race([Promise.all(gems.map(g=>tween(g,{ry:Math.floor(g.ry+0.4)},160))),wait(180)]);
+  await Promise.race([Promise.all(gems.map(g=>tween(g,{ry:Math.floor(g.ry+0.6)},160))),wait(500)]);
+  forceSettleTweens();
+  for(const g of gems)g.ry=clamp(Math.round(g.ry),0,ROWS-1);
+  await animToOwnCells(140);
   if(findMatchGroups(G.grid).length)await cascade(null,false);
+}
+// 强制完成所有进行中的 tween（跳到终值），用于动画超时兜底
+function forceSettleTweens(){
+  for(const tw of TWEENS){for(const it of tw.list)tw.obj[it.p]=it.to;tw.res()}
+  TWEENS.length=0;
 }
 /* ---- 胜负 ---- */
 async function victory(){
@@ -1644,8 +1665,9 @@ async function superRelease(){
   F.beams.push({dir:'h',idx:3,t:0},{dir:'h',idx:4,t:0},{dir:'v',idx:3,t:0},{dir:'v',idx:4,t:0});
   await clearWave(set,'special',1);
   await cascade(null,false);
-  G.busy=false;updateEnergyUI();
+  updateEnergyUI();
   await afterStable();
+  G.busy=false;
 }
 /* ========================= ItemManager ========================= */
 function buildItemBar(){
@@ -1685,7 +1707,10 @@ function consumeItem(id){
 function applyInstantItem(id){
   consumeItem(id);
   const it=ITEMS.find(x=>x.id===id);
-  if(id==='shuffle'){doShuffle(false)}
+  if(id==='shuffle'){
+    G.busy=true;
+    doShuffle(false).then(async()=>{await afterStable();G.busy=false}).catch(()=>{G.busy=false});
+  }
   else if(id==='moves'){
     if(G.level.obj.type==='timed'){G.timeLeft+=15;toast('⏱️ +15 秒！','⏱️')}
     else{G.movesLeft+=5;toast('👟 +5 步！','👟')}
@@ -1700,12 +1725,17 @@ function applyInstantItem(id){
     const cells=randGemCells(5);
     cells.forEach(rc=>F.boltFX(rc.c*CS+CS/2,rc.r*CS+CS/2));
     G.busy=true;
-    clearWave(new Set(cells.map(rc=>K(rc.r,rc.c))),'special',1).then(()=>cascade(null,false)).then(()=>{G.busy=false;afterStable()});
+    clearWave(new Set(cells.map(rc=>K(rc.r,rc.c))),'special',1)
+      .then(()=>cascade(null,false))
+      .then(async()=>{await afterStable();G.busy=false})
+      .catch(()=>{G.busy=false});
   }
 }
 async function applyItemTarget(r,c){
   const id=G.targetItem;G.targetItem=null;refreshItemBar();
   const cell=G.grid[r][c];
+  G.busy=true;
+  try{
   if(id==='hammer'){
     consumeItem(id);AU.sBomb();F.shakeIt(.3,6);
     if(cell.gem&&cell.gem.s){await clearWave(new Set([K(r,c)]),'special',1,[{r,c,s:cell.gem.s}])}
@@ -1755,17 +1785,17 @@ async function applyItemTarget(r,c){
     if(G.swapSel.r===r&&G.swapSel.c===c){G.swapSel=null;G.targetItem=null;refreshItemBar();return}
     consumeItem(id);S.stats.swaps++;
     const a=G.swapSel;G.swapSel=null;
-    G.busy=true;
     swapCells(a,{r,c});
     await animSwapCells(a,{r,c});
     const groups=findMatchGroups(G.grid);
     if(groups.length){useMove();await cascade(groups,true)}
-    G.busy=false;
+    else await animToOwnCells(160); // 无匹配也保持视觉一致
     await afterStable();
     return;
   }
   await cascade(null,false);
   await afterStable();
+  }finally{G.busy=false}
 }
 function grantItem(id,n){S.items[id]=(S.items[id]||0)+n;saveGame();if(G.level)refreshItemBar()}
 function openShop(){
