@@ -239,7 +239,7 @@ function getHeartPat(){
 }
 
 /* ================= 地形(程序生成,无缝) ================= */
-const TS=16, ROWS=VH/TS;
+const TS=16, CH=800, ROWS=CH/TS; // 地形块固定逻辑高800(原始整数网格), 与屏幕动态VH解耦, 任意屏高下纹理/河流/道路全程连续
 function hash2(x,y){const h=Math.sin(x*127.1+y*311.7)*43758.5453;return h-Math.floor(h);}
 function mod(n,m){return ((n%m)+m)%m;}
 function riverXAt(worldY){const gy=worldY/TS;return 240+Math.sin(gy*0.09)*110+Math.sin(gy*0.023)*60;}
@@ -721,7 +721,8 @@ function shade(hex,mul){
 }
 const TEU_SAFE=TAU; // 别名(防手误)
 function genChunk(idx){
-  const c=document.createElement('canvas');c.width=VW*2;c.height=VH*2;
+  const VH=CH; // 块内布设沿用VH写法, 统一锚定到固定块高800; v1.8.4的2x超采样随此锚定
+  const c=document.createElement('canvas');c.width=VW*2;c.height=VH*2; // 2x超采样: 高分屏防糊
   const g=c.getContext('2d');g.scale(2,2);
   const row0=idx*ROWS;
   // 主题分段背景基色: 0郊野 1城市 2工业区 3公园 4山野 5桥区(以河为景)
@@ -876,12 +877,12 @@ function genChunk(idx){
 function chunkFor(idx){
   let e=chunkMap.get(idx);
   if(!e){e=genChunk(idx);chunkMap.set(idx,e);
-    if(chunkMap.size>3){for(const k of Array.from(chunkMap.keys())){if(k!==idx&&k!==idx+1)chunkMap.delete(k);}}}
+    if(chunkMap.size>5){for(const k of Array.from(chunkMap.keys())){if(k<idx-1||k>idx+1)chunkMap.delete(k);}}}
   return e;
 }
 function drawTerrain(){
-  const k0=Math.floor(camY/VH);
-  for(let k=k0;k<=k0+1;k++)ctx.drawImage(chunkFor(k),0,Math.round(k*VH-camY),VW,VH);
+  const k0=Math.floor(camY/CH), k1=Math.ceil((camY+VH)/CH); // 动态屏高VH下按固定块高CH补块
+  for(let k=k0;k<=k1;k++)ctx.drawImage(chunkFor(k),0,Math.round(k*CH-camY),VW,CH); // 2x超采样块按整块绘制
 }
 function avoidWater(x,y){
   const wx=riverXAt(y+camY);
