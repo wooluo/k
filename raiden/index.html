@@ -250,10 +250,261 @@ const PALETTES=[
 let PAL=PALETTES[0];
 function applyPalette(l){PAL=PALETTES[(l-1)%PALETTES.length];}
 const chunkMap=new Map();
+// v1.8 动态地面汽车(在render时绘制, 世界Y定位: worldY = chunkY, x随机, 车道纵向行驶)
+let groundCars=[]; // {wx, wy, speed, dir, seed, drift}
+function ensureCars(){
+  const target=9;
+  while(groundCars.length<target){
+    const wy=camY+VH+rand(0,300);            // 屏幕外下方生成
+    const wx=40+rand(0,VW-80);
+    const rcx=riverXAt(wy);
+    if(Math.abs(wx-rcx)<40){continue;}        // 避开河
+    groundCars.push({wx,wy,speed:rand(26,60),dir:Math.random()<0.5?1:-1,seed:rand(0,99),drift:rand(-6,6)});
+  }
+}
+function updCars(dt){
+  ensureCars();
+  for(const car of groundCars){
+    car.wy+= (SCROLLV + car.speed*car.dir*0.9)*dt; // 世界Y推进: 地面滚动+自身车速
+  }
+  groundCars=groundCars.filter(c=>c.wy>camY-60 && c.wy<camY+VH*3);
+}
+function drawCars(){
+  for(const car of groundCars){
+    const y=car.wy-camY;
+    if(y<-20||y>VH+20)continue;
+    drawCar(ctx,car.wx,y,car.dir,car.seed);
+  }
+}
+// ── v1.8 地面装饰件库: 全部用世界Y哈希做确定性种子, 主题分段每800px一换 ──
+function segAt(gy){return mod(Math.floor(gy*TS/800),6);} // 0郊野 1城市 2工业区 3公园 4山野 5桥区
+function h2(a,b,c){const h=Math.sin(a*127.1+b*311.7+c*74.7)*43758.5453;return h-Math.floor(h);}
+
+// 高楼(俯视): 顶部亮面+底部阴影, 视差错觉
+function drawTower(g,x,y,w,h,seed){
+  const t=h2(seed,3,7);
+  const c1=['#5a6b7f','#4a5d6e','#6b7a8c'][(t*3)|0];
+  const c2=['#3d4a5a','#33404f','#46545f'][(t*7)|0];
+  g.fillStyle=c2;g.fillRect(x-w/2,y-h/2,w,h);           // 楼体(暗侧)
+  g.fillStyle=c1;g.fillRect(x-w/2,y-h/2,w-4,h-4);        // 受光面
+  g.fillStyle='rgba(255,255,255,0.10)';g.fillRect(x-w/2,y-h/2,w-4,3); // 顶棱高光
+  // 天台细节: 水塔/空调/直升机坪(H圆圈)
+  const d=h2(seed,11,13);
+  if(d<0.3){ g.fillStyle='#2e3844';g.fillRect(x-w/6,y-h/6,6,6);g.fillStyle='#8a99ab';g.fillRect(x-w/6+1,y-h/6+1,4,4); } // 水塔
+  else if(d<0.55){ for(let i=0;i<3;i++){g.fillStyle='#2e3844';g.fillRect(x-w/3+i*7,y+h/8,5,5);} } // 空调外机
+  else if(d<0.75){ g.strokeStyle='rgba(255,200,80,0.7)';g.lineWidth=1.5;g.beginPath();g.arc(x,y,w/4,0,TAU);g.stroke();
+    g.fillStyle='rgba(255,200,80,0.5)';g.beginPath();g.arc(x,y,1.5,0,TAU);g.fill(); } // 直升机坪
+  // 窗灯(稀疏暖光点)
+  for(let i=0;i<6;i++){const wx=x-w/2+3+h2(seed,i,1)*(w-8),wy=y-h/2+3+h2(seed,i,2)*(h-8);
+    if(h2(seed,i,3)<0.35){g.fillStyle='rgba(255,220,120,0.55)';g.fillRect(wx,wy,2,2);}}
+}
+// 小房子(俯视): 双坡屋顶+烟囱
+function drawHouse(g,x,y,s,seed){
+  const t=h2(seed,5,9);
+  const roof=['#8a4a3a','#7a5240','#94583c','#6e4434'][(t*4)|0];
+  const roof2=['#6e382c','#5e4232','#78462c','#563628'][(t*4)|0];
+  const w=s, h=s*0.8;
+  g.fillStyle=roof2;g.fillRect(x-w/2,y-h/2,w,h);
+  g.fillStyle=roof;g.fillRect(x-w/2+1,y-h/2+1,w-2,h-2);
+  // 屋脊线(俯视双坡)
+  g.strokeStyle='rgba(0,0,0,0.3)';g.lineWidth=1;
+  g.beginPath();g.moveTo(x,y-h/2+1);g.lineTo(x,y+h/2-1);g.stroke();
+  g.fillStyle='rgba(255,255,255,0.12)';g.fillRect(x-w/2+1,y-h/2+1,w/2-1,h-2); // 受光半坡
+  // 烟囱
+  if(h2(seed,7,3)<0.5){g.fillStyle='#4a4a52';g.fillRect(x+w/4,y-h/4,4,4);}
+  // 小院篱笆
+  g.strokeStyle='rgba(120,90,60,0.5)';g.lineWidth=1;
+  g.strokeRect(x-s*0.75,y-s*0.65,s*1.5,s*1.3);
+}
+// 树(俯视): 三层圆叠 + 光照
+function drawTree(g,x,y,r,seed){
+  g.fillStyle=PAL.trunk;g.beginPath();g.arc(x,y,r+1.6,0,TAU);g.fill();
+  g.fillStyle=PAL.trees[(h2(seed,1,2)*3)|0];g.beginPath();g.arc(x,y,r,0,TAU);g.fill();
+  g.fillStyle='rgba(255,255,255,0.13)';g.beginPath();g.arc(x-r*0.28,y-r*0.28,r*0.45,0,TAU);g.fill();
+  if(r>4.5){ // 大树加深色斑纹
+    g.fillStyle='rgba(0,0,0,0.18)';g.beginPath();g.arc(x+r*0.3,y+r*0.25,r*0.3,0,TAU);g.fill();
+  }
+}
+// 公园: 草坪+环形小径+中央喷泉+长椅
+function drawPark(g,cx,cy,seed){
+  const R=70+((h2(seed,2,4)*40)|0);
+  g.fillStyle=shade(PAL.greens[1],1.18);g.beginPath();g.arc(cx,cy,R,0,TAU);g.fill();
+  g.strokeStyle='rgba(220,205,160,0.55)';g.lineWidth=5;g.beginPath();g.arc(cx,cy,R*0.7,0,TAU);g.stroke(); // 环形小径
+  // 喷泉
+  g.fillStyle='#3d6e8a';g.beginPath();g.arc(cx,cy,10,0,TAU);g.fill();
+  g.fillStyle='#7db8d8';g.beginPath();g.arc(cx,cy,6,0,TAU);g.fill();
+  g.fillStyle='rgba(255,255,255,0.6)';g.beginPath();g.arc(cx-1.5,cy-1.5,2.5,0,TAU);g.fill();
+  // 长椅(4向)
+  for(let k=0;k<4;k++){const a=k*TAU/4+h2(seed,8,8);
+    const bx=cx+Math.cos(a)*R*0.45,by=cy+Math.sin(a)*R*0.45;
+    g.fillStyle='#7a5a3a';g.fillRect(bx-4,by-1.5,8,3);}
+  // 树环
+  for(let k=0;k<7;k++){const a=k*TAU/7+h2(seed,k,5);
+    const tx=cx+Math.cos(a)*R*0.88,ty=cy+Math.sin(a)*R*0.88;
+    if(tx>10&&tx<VW-10)drawTree(g,tx,ty,3.5+h2(seed,k,9)*2,seed+k);}
+}
+// 山头(俯视): 等高线同心变形圆
+function drawHill(g,cx,cy,seed){
+  const R=80+((h2(seed,3,6)*50)|0);
+  for(let ring=4;ring>=0;ring--){
+    const rr=R*(0.3+ring*0.175);
+    const c=['#3f5738','#465f3d','#4f6a44','#58744b','#61804f'][ring];
+    g.fillStyle=c;g.beginPath();
+    for(let a=0;a<TAU;a+=TAU/14){
+      const w=rr*(1+ (h2(seed,ring,(a*10)|0)-0.5)*0.24 );
+      const px=cx+Math.cos(a)*w,py=cy+Math.sin(a)*w;
+      a===0?g.moveTo(px,py):g.lineTo(px,py);
+    }
+    g.closePath();g.fill();
+  }
+  // 岩顶
+  g.fillStyle='#6e7a70';g.beginPath();g.arc(cx,cy,7,0,TAU);g.fill();
+}
+// 大桥: 横跨河面 + 桥塔 + 悬索 + 桥面汽车
+function drawBridge(g,y){
+  const rcx0=riverXAt(y);
+  const L=clamp(rcx0-120,10,VW), R=clamp(rcx0+120,0,VW-10);
+  // 桥面
+  g.fillStyle='#4a4d55';g.fillRect(L,y-14,R-L,28);
+  g.fillStyle='#5a5e68';g.fillRect(L,y-11,R-L,22);
+  // 车道虚线
+  g.strokeStyle='rgba(255,255,255,0.5)';g.lineWidth=1.5;g.setLineDash([8,7]);
+  g.beginPath();g.moveTo(L,y);g.lineTo(R,y);g.stroke();g.setLineDash([]);
+  // 护栏
+  g.strokeStyle='rgba(200,200,210,0.4)';g.lineWidth=1;
+  g.beginPath();g.moveTo(L,y-13);g.lineTo(R,y-13);g.moveTo(L,y+13);g.lineTo(R,y+13);g.stroke();
+  // 桥塔+悬索(在河两岸)
+  for(const tx of [rcx0-95,rcx0+95]){
+    g.fillStyle='#383c46';g.fillRect(tx-5,y-22,10,44);
+    g.fillStyle='#4a4f5c';g.fillRect(tx-5,y-22,5,44);
+    g.strokeStyle='rgba(180,185,200,0.5)';g.lineWidth=1;
+    g.beginPath();g.moveTo(tx,y-18);g.quadraticCurveTo(rcx0,y+6,tx===rcx0-95?rcx0+95:rcx0-95,y-18);g.stroke();
+  }
+  // 桥上汽车(静止贴图, 颜色哈希)
+  for(let i=0;i<5;i++){
+    const cx=L+8+h2(i,y,3)*(R-L-16);
+    drawCar(g,cx,y-6+((h2(i,y,7)*22)|0)-11,1,h2(i,y,9));
+  }
+}
+// 汽车(俯视): 车身+车顶+挡风玻璃+车灯
+function drawCar(g,x,y,dirC,seed){ // dirC: 1朝下(随地面滚动方向) -1朝上
+  const save=g.fillStyle;
+  const cols=['#c0392b','#2980b9','#f39c12','#27ae60','#8e44ad','#e74c3c','#16a085','#d35400'];
+  const c=cols[(h2(seed,1,1)*8)|0];
+  const w=8,l=14;
+  g.save();g.translate(x,y);if(dirC<0)g.rotate(Math.PI);
+  g.fillStyle='rgba(0,0,0,0.25)';g.fillRect(-w/2+1,-l/2+2,w,l); // 投影
+  g.fillStyle=c;g.fillRect(-w/2,-l/2,w,l);          // 车身
+  g.fillStyle=shade(c,1.25);g.fillRect(-w/2+1,-l/2+1,w-2,l*0.35); // 引擎盖高光
+  g.fillStyle='#2c3e50';g.fillRect(-w/2+1.5,-l/2+5,w-3,3);        // 挡风玻璃
+  g.fillStyle='#22313f';g.fillRect(-w/2+1.5,l/2-4,w-3,3);         // 后窗
+  g.fillStyle=shade(c,0.8);g.fillRect(-w/2,-l/2,w,2);g.fillRect(-w/2,l/2-2,w,2); // 保险杠
+  g.fillStyle='#ffe9a8';g.fillRect(-w/2+1,l/2,2,1.5);g.fillRect(w/2-3,l/2,2,1.5); // 车灯
+  g.restore();
+  g.fillStyle=save;
+}
+// 汽油桶堆: 3-6个圆桶簇 + 红色警示圈
+function drawBarrels(g,x,y,seed){
+  const n=3+((h2(seed,4,4)*4)|0);
+  g.strokeStyle='rgba(255,120,60,0.35)';g.lineWidth=2;
+  g.beginPath();g.arc(x,y,7+n*3.2,0,TEU_SAFE);g.stroke();
+  for(let i=0;i<n;i++){
+    const a=i*2.4+seed,bx=x+Math.cos(a)*(4+i*2.4),by=y+Math.sin(a)*(4+i*2.4);
+    g.fillStyle='#8a3a2a';g.beginPath();g.arc(bx,by,4.5,0,TAU);g.fill();
+    g.fillStyle='#a84a34';g.beginPath();g.arc(bx-0.8,by-0.8,3.2,0,TAU);g.fill();
+    g.strokeStyle='rgba(60,30,20,0.6)';g.lineWidth=1;g.beginPath();g.arc(bx,by,4.5,0,TAU);g.stroke();
+    g.strokeStyle='rgba(255,200,80,0.5)';g.beginPath();g.moveTo(bx-3,by);g.lineTo(bx+3,by);g.stroke(); // 封条
+  }
+}
+// 兵工厂: 大厂房+烟囱+油罐+围栏+警戒条纹
+function drawFactory(g,cx,cy,seed){
+  const w=90+((h2(seed,6,6)*30)|0), h=60+((h2(seed,7,7)*20)|0);
+  g.strokeStyle='rgba(90,70,50,0.5)';g.lineWidth=2;g.strokeRect(cx-w/2-14,cy-h/2-12,w+28,h+24); // 围栏
+  // 主厂房(锯齿顶)
+  g.fillStyle='#4a4f58';g.fillRect(cx-w/2,cy-h/2,w,h);
+  const saw=6+((h2(seed,8,8)*3)|0);
+  for(let i=0;i<saw;i++){
+    const sx=cx-w/2+i*(w/saw);
+    g.fillStyle=i%2?'#5c626e':'#545a64';
+    g.beginPath();g.moveTo(sx,cy-h/2);g.lineTo(sx+w/saw/2,cy-h/2-8);g.lineTo(sx+w/saw,cy-h/2);g.closePath();g.fill();
+  }
+  // 天窗
+  for(let i=0;i<saw;i+=2){const sx=cx-w/2+i*(w/saw);
+    g.fillStyle='rgba(160,200,230,0.35)';g.fillRect(sx+2,cy-h/2-6,w/saw-4,5);}
+  // 烟囱x2 + 烟
+  for(const off of [-w/4,w/4]){
+    g.fillStyle='#3a3f47';g.fillRect(cx+off-4,cy-h/2-20,8,16);
+    g.fillStyle='#c0392b';g.fillRect(cx+off-4,cy-h/2-20,8,3);
+    g.fillStyle='#e74c3c';g.fillRect(cx+off-4,cy-h/2-15,8,2);
+    for(let s=0;s<3;s++){ // 淡烟团
+      g.fillStyle='rgba(200,200,200,'+(0.22-s*0.06)+')';
+      g.beginPath();g.arc(cx+off+Math.sin(seed+s)*3,cy-h/2-24-s*7,3+s*1.5,0,TAU);g.fill();}
+  }
+  // 油罐区
+  const ox=cx+w/4+16,oy=cy+h/4;
+  if(ox<VW-20){for(let i=0;i<2;i++){
+    g.fillStyle='#7d8794';g.beginPath();g.arc(ox+i*13,oy,7,0,TAU);g.fill();
+    g.fillStyle='#99a4b0';g.beginPath();g.arc(ox+i*13-1,oy-1,4.5,0,TAU);g.fill();}}
+  // 警戒条纹入口
+  g.fillStyle='#f39c12';g.fillRect(cx-10,cy+h/2,20,5);
+  g.fillStyle='#2c3e50';for(let i=0;i<4;i++)g.fillRect(cx-10+i*5.5,cy+h/2,2.5,5);
+}
+// 乱石堆: 大小不一灰色多边形簇 + 少量杂草
+function drawRocks(g,x,y,seed){
+  const n=4+((h2(seed,9,9)*4)|0);
+  for(let i=0;i<n;i++){
+    const a=h2(seed,i,11)*TAU, rr=3+h2(seed,i,13)*(n>6?14:10);
+    const rx=x+Math.cos(a)*h2(seed,i,17)*16, ry=y+Math.sin(a)*h2(seed,i,19)*16;
+    const rs=3+h2(seed,i,23)*(5+(n*0.4));
+    g.fillStyle=['#5e6468','#676d72','#555b60'][(h2(seed,i,29)*3)|0];
+    g.beginPath();
+    for(let k=0;k<6;k++){const aa=k*TAU/6+h2(seed,i,k);
+      const px=rx+Math.cos(aa)*rs*(0.7+h2(seed,i,k+40)*0.5),py=ry+Math.sin(aa)*rs*(0.7+h2(seed,i,k+50)*0.5);
+      k===0?g.moveTo(px,py):g.lineTo(px,py);}
+    g.closePath();g.fill();
+    g.fillStyle='rgba(255,255,255,0.10)';g.beginPath();g.arc(rx-rs*0.25,ry-rs*0.25,rs*0.4,0,TAU);g.fill();
+  }
+  if(h2(seed,3,33)<0.5){ // 杂草
+    g.strokeStyle='rgba(100,130,80,0.6)';g.lineWidth=1;
+    for(let i=0;i<4;i++){const gx=x-12+i*7+((h2(seed,i,61)*5)|0);
+      g.beginPath();g.moveTo(gx,y+8);g.lineTo(gx+1,y+3);g.stroke();}
+  }
+}
+// 道路(横穿): 沥青+车道线+路肩
+function drawRoad(g,y){
+  g.fillStyle='#3a3d44';g.fillRect(0,y-20,VW,40);
+  g.fillStyle='#44474f';g.fillRect(0,y-17,VW,34);
+  g.strokeStyle='rgba(255,220,80,0.55)';g.lineWidth=2;g.setLineDash([12,9]);
+  g.beginPath();g.moveTo(0,y);g.lineTo(VW,y);g.stroke();g.setLineDash([]);
+  g.fillStyle='rgba(220,220,220,0.25)';g.fillRect(0,y-19,VW,2);g.fillRect(0,y+17,VW,2);
+  // 路上汽车(双向)
+  for(let i=0;i<6;i++){
+    const cx=20+h2(i,((y/40)|0),3)*(VW-40);
+    const dirC=h2(i,y,5)<0.5?1:-1;
+    drawCar(g,cx,y+dirC*8,dirC,h2(i,y,9));
+  }
+}
+// shade(color,mul): hex颜色乘系数
+function shade(hex,mul){
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.min(255,((n>>16)&255)*mul)|0,g2=Math.min(255,((n>>8)&255)*mul)|0,b=Math.min(255,(n&255)*mul)|0;
+  return 'rgb('+r+','+g2+','+b+')';
+}
+const TEU_SAFE=TAU; // 别名(防手误)
 function genChunk(idx){
   const c=document.createElement('canvas');c.width=VW;c.height=VH;
   const g=c.getContext('2d');
   const row0=idx*ROWS;
+  // 主题分段背景基色: 0郊野 1城市 2工业区 3公园 4山野 5桥区(以河为景)
+  const seg=segAt(row0); // 以chunk首行为准
+  const segPal=[
+    null,                                   // 0 郊野: 用PAL原色
+    {g:['#2e3540','#333b47','#39424f','#3f4956'],b:PAL.blues,sh:'#3d4650'}, // 1 城市: 冷灰
+    {g:['#3d3a30','#45412f','#4d4935','#554f3a'],b:PAL.blues,sh:'#4f4a30'}, // 2 工业: 土褐
+    {g:['#1d4025','#235030','#2a5c38','#316640'],b:PAL.blues,sh:'#2c5a30'}, // 3 公园: 浓绿
+    {g:['#263c2c','#2c4634','#33503c','#3a5a44'],b:PAL.blues,sh:'#324c38'}, // 4 山野: 深绿灰
+    {g:PAL.greens,b:PAL.blues,sh:PAL.shore},                                   // 5 桥区: 原色
+  ][seg];
   for(let ry=0;ry<ROWS;ry++){
     const gy=row0+ry;
     const road=mod(gy,40)<2;
@@ -264,25 +515,89 @@ function genChunk(idx){
       const inRiver=Math.abs(cx*TS+8-rcx)<17;
       if(road)col=fine<0.5?'#3d3f47':'#44464f';
       else if(inRiver)col=PAL.blues[(patch*3)|0];
-      else col=PAL.greens[(patch*3.99)|0];
+      else col=(segPal?segPal.g:PAL.greens)[(patch*3.99)|0];
       g.fillStyle=col;g.fillRect(cx*TS,ry*TS,TS,TS);
     }
     if(!road){ // 窄河岸带
-      g.fillStyle=PAL.shore;
+      g.fillStyle=segPal?segPal.sh:PAL.shore;
       g.fillRect(clamp(rcx-22,0,VW),ry*TS,5,TS);
       g.fillRect(clamp(rcx+17,0,VW),ry*TS,5,TS);
     }
   }
-  // 树木/岩石装饰
-  for(let i=0;i<46;i++){
-    const x=rand(8,VW-8),y=rand(8,VH-8);
-    const gy=(row0+y/TS)|0;
-    if(Math.abs(x-riverXAt(gy*TS))<30)continue;
-    if(mod(gy,40)<2.6)continue;
-    const r=rand(3,5.5);
-    g.fillStyle=PAL.trunk;g.beginPath();g.arc(x,y,r+1.4,0,TAU);g.fill();
-    g.fillStyle=PAL.trees[(Math.random()*3)|0];g.beginPath();g.arc(x,y,r,0,TAU);g.fill();
-    g.fillStyle='rgba(255,255,255,0.12)';g.beginPath();g.arc(x-r*0.3,y-r*0.3,r*0.4,0,TAU);g.fill();
+  // ── v1.8 物件布设(按主题) ──
+  const midY=VH/2, segSeed=idx; // chunk级种子
+  const riverAvoid=(x,y)=>{const gy=row0+y/TS;return Math.abs(x-riverXAt(gy*TS))>34;};
+  if(seg===1){ // 城市: 高楼群+道路+汽车
+    for(let i=0;i<10;i++){
+      const x=30+h2(idx,i,1)*(VW-60), y=h2(idx,i,2)*VH;
+      if(!riverAvoid(x,y))continue;
+      const w=26+h2(idx,i,3)*30, hh=26+h2(idx,i,4)*34;
+      if(x-w/2>10&&x+w/2<VW-10)drawTower(g,x,y,w,hh,idx*13+i);
+    }
+    // 一条横穿道路
+    const ry2=h2(idx,99,1)*VH;
+    if(ry2>60&&ry2<VH-60)drawRoad(g,ry2);
+    // 零星小房子(城郊结合)
+    for(let i=0;i<2;i++){
+      const x=30+h2(idx,i+50,1)*(VW-60),y=h2(idx,i+50,2)*VH;
+      if(riverAvoid(x,y))drawHouse(g,x,y,16+h2(idx,i,7)*8,idx+i);
+    }
+  }else if(seg===2){ // 工业区: 兵工厂+汽油桶堆+道路
+    if(h2(idx,21,1)<0.75){
+      const fx=110+h2(idx,21,2)*(VW-220),fy=h2(idx,21,3)*(VH-160)+80;
+      if(riverAvoid(fx,fy))drawFactory(g,fx,fy,idx*7+2);
+    }
+    for(let i=0;i<4;i++){
+      const x=25+h2(idx,i+30,1)*(VW-50),y=h2(idx,i+30,2)*VH;
+      if(riverAvoid(x,y))drawBarrels(g,x,y,idx*3+i);
+    }
+    const ry2=h2(idx,98,1)*VH;
+    if(ry2>70&&ry2<VH-70)drawRoad(g,ry2);
+  }else if(seg===3){ // 公园: 大草坪+喷泉+树群
+    for(let i=0;i<2;i++){
+      const px=95+h2(idx,i+60,1)*(VW-190),py=h2(idx,i+60,2)*(VH-180)+90;
+      if(riverAvoid(px,py))drawPark(g,px,py,idx*5+i);
+    }
+    for(let i=0;i<14;i++){
+      const x=20+h2(idx,i+70,1)*(VW-40),y=h2(idx,i+70,2)*VH;
+      if(riverAvoid(x,y))drawTree(g,x,y,3+h2(idx,i,9)*4,idx*11+i);
+    }
+  }else if(seg===4){ // 山野: 山头+乱石堆+树
+    for(let i=0;i<2;i++){
+      const hx=100+h2(idx,i+80,1)*(VW-200),hy=h2(idx,i+80,2)*(VH-200)+100;
+      if(riverAvoid(hx,hy))drawHill(g,hx,hy,idx*17+i);
+    }
+    for(let i=0;i<5;i++){
+      const x=25+h2(idx,i+90,1)*(VW-50),y=h2(idx,i+90,2)*VH;
+      if(riverAvoid(x,y))drawRocks(g,x,y,idx*19+i);
+    }
+    for(let i=0;i<8;i++){
+      const x=20+h2(idx,i+100,1)*(VW-40),y=h2(idx,idx%97+i,2)*VH;
+      if(riverAvoid(x,y))drawTree(g,x,y,3.5+h2(idx,i,19)*3.5,idx*23+i);
+    }
+  }else if(seg===5){ // 桥区: 大桥横跨+桥头汽车+乱石
+    const by=VH*0.4+h2(idx,77,1)*VH*0.2;
+    drawBridge(g,by);
+    for(let i=0;i<3;i++){
+      const x=25+h2(idx,i+110,1)*(VW-50),y=h2(idx,i+110,2)*VH;
+      if(riverAvoid(x,y)&&Math.abs(y-by)>40)drawRocks(g,x,y,idx*29+i);
+    }
+  }else{ // 0 郊野: 树+小房子+乱石(原风格加密)
+    for(let i=0;i<18;i++){
+      const x=rand(8,VW-8),y=rand(8,VH-8);
+      const gy=(row0+y/TS)|0;
+      if(Math.abs(x-riverXAt(gy*TS))<30)continue;
+      if(mod(gy,40)<2.6)continue;
+      drawTree(g,x,y,3+rand(0,2.5),idx*31+i);
+    }
+    for(let i=0;i<3;i++){
+      const x=30+h2(idx,i+120,1)*(VW-60),y=h2(idx,i+120,2)*VH;
+      if(riverAvoid(x,y))drawHouse(g,x,y,14+h2(idx,i,27)*10,idx*37+i);
+    }
+    if(h2(idx,66,1)<0.5){
+      const x=40+h2(idx,66,2)*(VW-80),y=h2(idx,66,3)*VH;
+      if(riverAvoid(x,y))drawRocks(g,x,y,idx*41+1);
+    }
   }
   return c;
 }
@@ -1418,6 +1733,7 @@ function updHoming(dt){
 
 /* ================= 主更新 ================= */
 function update(dt){
+  updCars(dt);
   G.timeIn+=dt;G.phaseT+=dt;G.runT+=dt;
   if(G.chainBoom){
     G.chainBoom.t-=dt;
@@ -2721,6 +3037,7 @@ function render(){
   ctx.setTransform(view.s,0,0,view.s,0,0);
   ctx.imageSmoothingEnabled=true;
   drawTerrain();
+  drawCars();
   ctx.save();
   if(G.shake>0)ctx.translate(rand(-1,1)*G.shake*0.5,rand(-1,1)*G.shake*0.5);
   // 地面层
