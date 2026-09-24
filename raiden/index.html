@@ -408,6 +408,16 @@ function explode(x,y,n,big){
   G.shake=Math.min(16,G.shake+(big?8:3));
 }
 function floater(x,y,text,c){floats.push({x,y,text,c:c||'#ffd24d',life:0.9});}
+// 幸存者台词池: wait=待援时喊话 / got=获救瞬间道谢 / slow=嫌你来晚(待援>12秒触发)
+const SURV_LINES={
+  wait:['救我! 救我!','这里! 这里!','救命啊——','别丢下我!','快救我!','我看到你了!','拉我一把!','撑不住了!'],
+  got:['谢谢啊!','谢谢你!','得救了!','你真棒!','大哥威武!','欠你个人情!','抱住了!','同生共死!'],
+  slow:['你咋才来?!','可算来了!','等你半天了!','再晚就凉了!','腿都麻了!','热泪盈眶!']
+};
+function survLine(pool,x,y){
+  const L=SURV_LINES[pool];const t=L[Math.floor(Math.random()*L.length)];
+  floats.push({x,y,text:t,c:pool==='got'?'#ff8fa3':'#ffd24d',life:1.4,vy:-14}); // 台词飘1.4s,缓慢上升
+}
 function toast(text){G.toasts.push({text,t:1.8});}
 
 /* ================= 射击 ================= */
@@ -863,7 +873,10 @@ function updSurvivors(dt){
     if(s.st==='wait'){
       s.y+=SCROLLV*dt;
       const near=dist2(s.x,s.y,player.x,player.y)<62*62;
-      if(near)s.prog=Math.min(1,s.prog+dt/1.6);
+      if(near){
+        if(!s.shouted){s.shouted=1;survLine(s.t>12?'slow':'wait',s.x,s.y-22);} // 靠近首帧喊话:等久了嫌你慢,否则喊救命
+        s.prog=Math.min(1,s.prog+dt/1.6);
+      }
       else s.prog=Math.max(0,s.prog-dt*0.5);
       if(s.prog>=1){s.st='fly';s.fly=0;SND.rescue();}
       if(s.y>VH+30)survivors.splice(i,1);
@@ -873,6 +886,8 @@ function updSurvivors(dt){
       if(s.fly>=1){
         survivors.splice(i,1);
         G.rescued++;
+        survLine('got',player.x,player.y-52); // 获救道谢
+        for(let k=0;k<5;k++)parts.push({x:player.x+rand(-8,8),y:player.y-14+rand(-6,6),vx:rand(-18,18),vy:rand(-55,-25),life:0.8,max:0.8,size:rand(2.5,4),c:'#ff5f7a',type:'heart'}); // 红心粒子x5
         if(G.t-G.lastRescueAt<25)G.rescueStreak=Math.min(4,G.rescueStreak+1);else G.rescueStreak=1;
         G.lastRescueAt=G.t;
         const pts=500*G.rescueStreak;G.score+=pts;
@@ -1952,6 +1967,15 @@ function render(){
   for(const p of parts){
     const a=clamp(p.life/p.max,0,1);
     if(p.type==='sq'){ctx.globalAlpha=a;ctx.fillStyle=p.c;ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);}
+    else if(p.type==='heart'){ // 红心粒子: 获救瞬间飘心
+      ctx.globalAlpha=a;ctx.fillStyle=p.c;
+      const s=p.size;
+      ctx.beginPath();
+      ctx.moveTo(p.x,p.y+s*0.35);
+      ctx.bezierCurveTo(p.x-s,p.y-s*0.45,p.x-s*0.5,p.y-s*1.1,p.x,p.y-s*0.35);
+      ctx.bezierCurveTo(p.x+s*0.5,p.y-s*1.1,p.x+s,p.y-s*0.45,p.x,p.y+s*0.35);
+      ctx.fill();
+    }
     else if(p.type==='ring'){
       ctx.globalAlpha=a;ctx.strokeStyle=p.c;ctx.lineWidth=3;
       ctx.beginPath();ctx.arc(p.x,p.y,(1-a)*p.size+6,0,TAU);ctx.stroke();
