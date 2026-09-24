@@ -317,6 +317,139 @@ function drawHospital(g,cx,cy,seed){
   g.fillStyle='#e74c3c';g.fillRect(cx-24,cy+36,5,7);                // 车身红条
 }
 // 学校(俯视): ∏型教学楼+田径场跑道+球场+旗杆+传达室
+const SLOGANS=['为人民服务','向雷锋同志学习','要想富先修路','少生孩子多种树','打劫警车是违法的','打电话要钱的都是诈骗'];
+function drawSlogan(g,x,y,w,text){ // 红底黄字横幅标语
+  const h=text.length>7?11:13;
+  g.fillStyle='#9e1c1c';g.fillRect(x-w/2,y,w,h);
+  g.strokeStyle='#701010';g.lineWidth=1;g.strokeRect(x-w/2,y,w,h);
+  g.fillStyle='#ffd94a';g.font=(text.length>7?'bold 8px':'bold 10px')+' sans-serif';
+  g.textAlign='center';g.textBaseline='middle';
+  g.fillText(text,x,y+h/2);
+  g.textAlign='left';g.textBaseline='alphabetic';
+}
+function drawBillboard(g,x,y,seed){ // 广告位招租大牌(下半随机标语)
+  g.fillStyle='#565b62';g.fillRect(x-3,y+9,2.5,13);g.fillRect(x+1,y+9,2.5,13);
+  g.fillStyle='#e9e5d9';g.fillRect(x-34,y-16,68,26);
+  g.strokeStyle='#3a3f46';g.lineWidth=1.5;g.strokeRect(x-34,y-16,68,26);
+  g.fillStyle='#c22222';g.font='bold 10px sans-serif';g.textAlign='center';g.textBaseline='middle';
+  g.fillText('广告位招租',x,y-8);
+  g.fillStyle='#3a3f46';g.font='7px sans-serif';
+  g.fillText(SLOGANS[(seed>>>2)%6],x,y+3);
+  g.textAlign='left';g.textBaseline='alphabetic';
+}
+function drawTiananmen(g,cx,cy,seed){
+  g.fillStyle='#6a6d72';g.fillRect(cx-95,cy+34,190,42);            // 广场
+  g.fillStyle='#75787d';for(let i=0;i<6;i++)g.fillRect(cx-92+i*32,cy+36,30,38);
+  g.fillStyle='#cfd3d8';for(let i=0;i<5;i++)g.fillRect(cx-70+i*32,cy+26,20,8); // 金水桥
+  g.fillStyle='#8a2626';g.fillRect(cx-88,cy-10,176,40);             // 城台
+  g.fillStyle='#772020';g.fillRect(cx-88,cy+22,176,8);
+  g.fillStyle='#3a1010';for(let i=0;i<5;i++){const dx=cx-52+i*26;   // 城门洞
+    g.fillRect(dx,cy+4,12,18);g.fillRect(dx+1,cy+2,10,4);}
+  g.fillStyle='#9c2b2b';g.fillRect(cx-66,cy-34,132,26);             // 城楼
+  g.fillStyle='#e8b93c';g.beginPath();g.moveTo(cx-78,cy-34);g.lineTo(cx+78,cy-34); // 下檐
+  g.lineTo(cx+64,cy-46);g.lineTo(cx-64,cy-46);g.closePath();g.fill();
+  g.fillStyle='#d4a52f';g.beginPath();g.moveTo(cx-54,cy-46);g.lineTo(cx+54,cy-46); // 上檐
+  g.lineTo(cx+42,cy-56);g.lineTo(cx-42,cy-56);g.closePath();g.fill();
+  g.fillStyle='#ffd94a';g.beginPath();g.arc(cx,cy-24,5,0,6.2832);g.fill(); // 国徽位
+  drawSlogan(g,cx,cy-16,84,'为人民服务');
+  g.fillStyle='#d8d4c8';g.fillRect(cx-104,cy-6,5,26);g.fillRect(cx+99,cy-6,5,26); // 华表
+  g.fillStyle='#c0bcae';g.fillRect(cx-105,cy-10,7,5);g.fillRect(cx+98,cy-10,7,5);
+}
+function drawBirdsNest(g,cx,cy,seed){
+  g.fillStyle='#8a2d2d';g.strokeStyle='#8a2d2d';g.lineWidth=5;
+  g.beginPath();g.ellipse(cx,cy,58,46,0,0,6.2832);g.stroke();       // 跑道
+  g.fillStyle='#3f6d3a';g.beginPath();g.ellipse(cx,cy,52,40,0,0,6.2832);g.fill();
+  g.fillStyle='#2f5a2c';g.beginPath();g.ellipse(cx,cy,40,30,0,0,6.2832);g.fill();
+  g.strokeStyle='#c8ccd2';g.lineWidth=2;                             // 编织钢构
+  for(let i=0;i<26;i++){
+    const a1=seed*0.61+i*0.61,a2=a1+1.2+((seed+i*7)%5)*0.15;
+    g.beginPath();g.moveTo(cx+Math.cos(a1)*54,cy+Math.sin(a1)*42);
+    g.quadraticCurveTo(cx+Math.cos((a1+a2)/2)*64,cy+Math.sin((a1+a2)/2)*50,cx+Math.cos(a2)*54,cy+Math.sin(a2)*42);
+    g.stroke();
+  }
+  g.strokeStyle='#9aa0a8';g.lineWidth=1.2;
+  for(let i=0;i<14;i++){const a=seed*0.3+i*0.449;
+    g.beginPath();g.moveTo(cx+Math.cos(a)*54,cy+Math.sin(a)*42);g.lineTo(cx+Math.cos(a)*46,cy+Math.sin(a)*36);g.stroke();}
+}
+function drawCCTV(g,cx,cy,seed){ // 央视大裤衩: 环形悬臂(俯视)
+  g.fillStyle='#4e7ea8';g.fillRect(cx-34,cy-46,26,92);              // 副塔
+  g.fillStyle='#5f92c2';g.fillRect(cx+8,cy-30,26,86);               // 主塔(错位)
+  g.fillStyle='#87b8e2';g.fillRect(cx+8,cy-30,26,5);
+  g.fillStyle='#6fa0cc';                                            // 顶部连梁(裤腰)
+  g.beginPath();g.moveTo(cx-34,cy-46);g.lineTo(cx+34,cy-56);g.lineTo(cx+34,cy-40);g.lineTo(cx-34,cy-30);g.closePath();g.fill();
+  g.strokeStyle='rgba(255,255,255,.25)';g.lineWidth=1;              // 幕墙网格
+  for(let i=0;i<8;i++){
+    g.beginPath();g.moveTo(cx-34,cy-38+i*11);g.lineTo(cx-8,cy-38+i*11);g.stroke();
+    g.beginPath();g.moveTo(cx+8,cy-24+i*10);g.lineTo(cx+34,cy-24+i*10);g.stroke();}
+  drawSlogan(g,cx,cy+56,132,'打电话要钱的都是诈骗');
+}
+function drawPearlTower(g,cx,cy,seed){ // 东方明珠
+  g.fillStyle='#b8bec6';g.fillRect(cx-4,cy-6,8,44);                 // 三立柱
+  g.fillRect(cx-26,cy-14,7,34);g.fillRect(cx+19,cy-14,7,34);
+  g.fillStyle='#7a4fa0';g.beginPath();g.arc(cx,cy-18,22,0,6.2832);g.fill(); // 下球
+  g.fillStyle='#9a6fc4';g.beginPath();g.arc(cx-6,cy-24,8,0,6.2832);g.fill();
+  g.fillStyle='#7a4fa0';g.beginPath();g.arc(cx,cy-48,13,0,6.2832);g.fill(); // 上球
+  g.fillStyle='#9a6fc4';g.beginPath();g.arc(cx,cy-66,7,0,6.2832);g.fill();
+  g.fillStyle='#d0d4da';g.fillRect(cx-1.5,cy-84,3,12);              // 天线
+  g.strokeStyle='rgba(255,255,255,.3)';g.lineWidth=1;
+  g.beginPath();g.ellipse(cx,cy-18,22,8,0,0,6.2832);g.stroke();
+  g.beginPath();g.ellipse(cx,cy-18,8,22,0,0,6.2832);g.stroke();
+  drawSlogan(g,cx,cy+52,132,'打电话要钱的都是诈骗');
+}
+function drawTianjinEye(g,cx,cy,seed){ // 天津之眼: 摩天轮跨桥
+  g.fillStyle='#4a5058';g.fillRect(cx-95,cy+16,190,14);             // 桥
+  g.fillStyle='#5a616a';g.fillRect(cx-95,cy+16,190,4);
+  g.strokeStyle='#c9ced6';g.lineWidth=6;
+  g.beginPath();g.arc(cx,cy-8,44,0,6.2832);g.stroke();               // 轮环
+  g.strokeStyle='#9aa0a8';g.lineWidth=1.5;
+  for(let i=0;i<12;i++){const a=i*0.5236+seed*0.1;
+    g.beginPath();g.moveTo(cx,cy-8);g.lineTo(cx+Math.cos(a)*44,cy-8+Math.sin(a)*44);g.stroke();}
+  for(let i=0;i<8;i++){const a=i*0.7854+seed*0.13;                  // 红轿舱
+    g.fillStyle='#d43a3a';g.fillRect(cx+Math.cos(a)*44-3,cy-8+Math.sin(a)*44-3,6,6);}
+  g.fillStyle='#e8ecf0';g.beginPath();g.arc(cx,cy-8,5,0,6.2832);g.fill();
+  drawSlogan(g,cx,cy+44,116,'打劫警车是违法的');
+}
+function drawYueyang(g,cx,cy,seed){ // 岳阳楼: 三层飞檐
+  g.fillStyle='#8a8478';g.fillRect(cx-44,cy+18,88,16);
+  g.fillStyle='#7a7468';g.fillRect(cx-48,cy+30,96,8);
+  g.fillStyle='#9c3a2e';g.fillRect(cx-30,cy-6,60,22);
+  g.fillStyle='#a8483a';g.fillRect(cx-24,cy-28,48,20);
+  g.fillStyle='#b4523f';g.fillRect(cx-18,cy-46,36,16);
+  g.fillStyle='#e8b93c';
+  g.beginPath();g.moveTo(cx-40,cy-6);g.lineTo(cx+40,cy-6);g.lineTo(cx+30,cy-16);g.lineTo(cx-30,cy-16);g.closePath();g.fill();
+  g.beginPath();g.moveTo(cx-34,cy-28);g.lineTo(cx+34,cy-28);g.lineTo(cx+25,cy-38);g.lineTo(cx-25,cy-38);g.closePath();g.fill();
+  g.beginPath();g.moveTo(cx-26,cy-46);g.lineTo(cx+26,cy-46);g.lineTo(cx+18,cy-56);g.lineTo(cx-18,cy-56);g.closePath();g.fill();
+  g.fillStyle='#ffd94a';g.beginPath();g.arc(cx,cy-60,4,0,6.2832);g.fill(); // 宝顶
+  g.fillStyle='#7a2a20';for(let i=0;i<4;i++){
+    g.fillRect(cx-26+i*16,cy-4,3,18);g.fillRect(cx-20+i*12,cy-26,2.5,16);}
+  g.fillStyle='#3a6a8a';g.fillRect(cx-70,cy+38,140,14);              // 洞庭湖
+  g.fillStyle='#4a7aa0';g.fillRect(cx-70,cy+38,140,5);
+}
+function drawBazaar(g,cx,cy,seed){ // 新疆国际大巴扎
+  g.fillStyle='#a05a38';g.fillRect(cx-56,cy-18,112,44);              // 主殿
+  g.fillStyle='#e0a83c';g.beginPath();g.arc(cx,cy-18,30,3.1416,0);g.fill(); // 大金穹顶
+  g.fillStyle='#f0c050';g.beginPath();g.arc(cx-8,cy-28,10,3.1416,0);g.fill();
+  g.fillStyle='#ffd94a';g.fillRect(cx-1.5,cy-52,3,8);
+  g.fillStyle='#c89448';g.beginPath();g.arc(cx-38,cy-18,12,3.1416,0);g.fill();
+  g.beginPath();g.arc(cx+38,cy-18,12,3.1416,0);g.fill();
+  g.fillStyle='#5a3a28';for(let i=0;i<5;i++){const dx=cx-40+i*20;   // 拱窗
+    g.fillRect(dx,cy+2,8,14);g.beginPath();g.arc(dx+4,cy+2,4,3.1416,0);g.fill();}
+  g.fillStyle='#b06a44';g.fillRect(cx-66,cy-34,8,56);g.fillRect(cx+58,cy-34,8,56); // 宣礼塔
+  g.fillStyle='#e0a83c';g.beginPath();g.arc(cx-62,cy-34,5,3.1416,0);g.fill();
+  g.beginPath();g.arc(cx+62,cy-34,5,3.1416,0);g.fill();
+  drawSlogan(g,cx,cy+48,96,'要想富先修路');
+}
+function drawPingan(g,cx,cy,seed){ // 深圳平安金融中心
+  g.fillStyle='#5a7488';g.fillRect(cx-14,cy-58,28,108);              // 极细主塔
+  g.fillStyle='#6a8a9e';g.fillRect(cx-14,cy-58,10,108);
+  g.fillStyle='#54707f';g.fillRect(cx-10,cy-40,20,6);g.fillRect(cx-8,cy-20,16,6);
+  g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=1;
+  for(let r=0;r<10;r++){g.beginPath();g.moveTo(cx-14,cy-56+r*10);g.lineTo(cx+14,cy-56+r*10);g.stroke();}
+  g.fillStyle='#c8ccd2';g.beginPath();g.moveTo(cx-10,cy-58);g.lineTo(cx+10,cy-58);g.lineTo(cx,cy-86);g.closePath();g.fill();
+  g.fillStyle='#e8ecf0';g.fillRect(cx-1,cy-94,2,10);
+  g.fillStyle='#4e6878';g.fillRect(cx-34,cy+34,68,18);               // 裙楼
+  drawBillboard(g,cx,cy-108,7);                                     // 楼顶广告位招租
+}
 function drawSchool(g,cx,cy,seed){
   const tx=cx-38,ty=cy-48;
   g.fillStyle='#d9c9a3';g.fillRect(tx,ty,76,14);                    // 后横楼
@@ -625,18 +758,30 @@ function genChunk(idx){
   if(seg===1){ // 城市: 高楼群+地标(医院/学校/政府/办公)+道路+汽车
     const lk=h2(idx,3,3); // 地标选型
     let res=null; // 地标保留区(塔楼避让)
-    if(lk<0.15){
+    if(lk<0.08){
       const lx=130+h2(idx,3,31)*(VW-260), ly=150+h2(idx,3,32)*(VH-300);
       if(riverAvoid(lx,ly)){ drawHospital(g,lx,ly,idx*43+1); res={x:lx,y:ly,r:88}; }
-    }else if(lk<0.30){
+    }else if(lk<0.16){
       const lx=135+h2(idx,3,31)*(VW-270), ly=165+h2(idx,3,32)*(VH-330);
-      if(riverAvoid(lx,ly)){ drawSchool(g,lx,ly,idx*47+1); res={x:lx,y:ly,r:98}; }
-    }else if(lk<0.45){
+      if(riverAvoid(lx,ly)){ drawSchool(g,lx,ly,idx*47+1); drawSlogan(g,lx,ly+56,124,'向雷锋同志学习'); res={x:lx,y:ly,r:98}; }
+    }else if(lk<0.24){
       const lx=140+h2(idx,3,33)*(VW-280), ly=150+h2(idx,3,34)*(VH-300);
-      if(riverAvoid(lx,ly)){ drawGovHall(g,lx,ly,idx*53+1); res={x:lx,y:ly,r:100}; }
-    }else if(lk<0.75){
+      if(riverAvoid(lx,ly)){ drawGovHall(g,lx,ly,idx*53+1); drawSlogan(g,lx,ly+62,132,'为人民服务'); res={x:lx,y:ly,r:100}; }
+    }else if(lk<0.36){
       const lx=110+h2(idx,3,35)*(VW-220), ly=120+h2(idx,3,36)*(VH-240);
       if(riverAvoid(lx,ly)){ drawOfficeTower(g,lx,ly,idx*59+1); res={x:lx,y:ly,r:78}; }
+    }else if(lk<0.92){ // v1.8.2 国家地标8连(mod(idx*3,8)轮换)
+      const gl=(h2(idx,3,45)*8)|0, lx=145+h2(idx,3,41)*(VW-290), ly=165+h2(idx,3,42)*(VH-330);
+      if(riverAvoid(lx,ly)){
+        if(gl===0){drawTiananmen(g,lx,ly,idx*67+1);res={x:lx,y:ly,r:118};}
+        else if(gl===1){drawBirdsNest(g,lx,ly,idx*71+1);res={x:lx,y:ly,r:100};}
+        else if(gl===2){drawCCTV(g,lx,ly,idx*73+1);res={x:lx,y:ly,r:105};}
+        else if(gl===3){drawPearlTower(g,lx,ly,idx*79+1);res={x:lx,y:ly,r:100};}
+        else if(gl===4){drawTianjinEye(g,lx,ly,idx*83+1);res={x:lx,y:ly,r:115};}
+        else if(gl===5){drawYueyang(g,lx,ly,idx*89+1);res={x:lx,y:ly,r:95};}
+        else if(gl===6){drawBazaar(g,lx,ly,idx*97+1);res={x:lx,y:ly,r:100};}
+        else{drawPingan(g,lx,ly,idx*101+1);res={x:lx,y:ly,r:100};}
+      }
     }
     for(let i=0;i<10;i++){
       const x=30+h2(idx,i,1)*(VW-60), y=h2(idx,i,2)*VH;
@@ -644,6 +789,12 @@ function genChunk(idx){
       if(res&&Math.hypot(x-res.x,y-res.y)<res.r+26)continue;
       const w=26+h2(idx,i,3)*30, hh=26+h2(idx,i,4)*34;
       if(x-w/2>10&&x+w/2<VW-10)drawTower(g,x,y,w,hh,idx*13+i);
+    }
+    for(let i=0;i<2;i++){ // v1.8.2 广告位招租
+      if(h2(idx,i+160,7)<0.75){
+        const bx=44+h2(idx,i+160,1)*(VW-88),by=34+h2(idx,i+160,2)*(VH-68);
+        if(riverAvoid(bx,by)&&(!res||Math.hypot(bx-res.x,by-res.y)>res.r+42))drawBillboard(g,bx,by,idx*5+i*3);
+      }
     }
     // 一条横穿道路
     const ry2=h2(idx,99,1)*VH;
@@ -661,6 +812,10 @@ function genChunk(idx){
     for(let i=0;i<4;i++){
       const x=25+h2(idx,i+30,1)*(VW-50),y=h2(idx,i+30,2)*VH;
       if(riverAvoid(x,y))drawBarrels(g,x,y,idx*3+i);
+    }
+    if(h2(idx,31,7)<0.6){ // v1.8.2 广告位招租
+      const bx=50+h2(idx,31,1)*(VW-100),by=40+h2(idx,31,2)*(VH-80);
+      if(riverAvoid(bx,by))drawBillboard(g,bx,by,idx*9+4);
     }
     const ry2=h2(idx,98,1)*VH;
     if(ry2>70&&ry2<VH-70)drawRoad(g,ry2);
