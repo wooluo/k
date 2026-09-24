@@ -416,13 +416,20 @@ function aimedShot(x,y,spd,n,spread,kind){
   const a0=angTo(x,y,player.x,player.y);n=n||1;spread=spread||0;
   for(let i=0;i<n;i++){
     const a=a0+(i-(n-1)/2)*spread;
-    eBullets.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:kind==='shell'?6:4,kind:kind||'shot'});
+    const sp=Math.min(spd,290); // 弹速全局上限290,保证反应时间
+    eBullets.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:kind==='shell'?6:4,kind:kind||'shot'});
   }
 }
-function ringShot(x,y,n,spd,aoff){
+function ringShot(x,y,n,spd,aoff,gap){ // gap: 弹环留逃生缺口(gap=1时正对玩家方向留~48°逃生通道)
   if(eBullets.length>110)return;
+  const away=aoff||0;
+  const aP=gap?angTo(x,y,player.x,player.y):null;
   for(let i=0;i<n;i++){
-    const a=(i/n)*TAU+(aoff||0);
+    const a=(i/n)*TAU+away;
+    if(aP!==null){
+      let da=a-aP;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;
+      if(Math.abs(da)<0.42)continue; // 缺口正对玩家 → 永远有路可走
+    }
     eBullets.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:4,kind:'shot'});
   }
 }
@@ -583,12 +590,12 @@ function updEMissiles(dt){
     const m=eMissiles[i];m.t+=dt;
     const want=angTo(m.x,m.y,player.x,player.y);
     let da=want-m.a;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;
-    m.a+=clamp(da,-2.3*dt,2.3*dt);
-    m.sp=Math.min(330,m.sp+130*dt);
+    m.a+=clamp(da,-1.9*dt,1.9*dt); // 转向更笨,玩家能甩开
+    m.sp=Math.min(280,m.sp+110*dt); // 速度上限330→280
     m.x+=Math.cos(m.a)*m.sp*dt;m.y+=Math.sin(m.a)*m.sp*dt;
     if(Math.random()<0.6)parts.push({x:m.x,y:m.y,vx:rand(-15,15),vy:rand(-15,15),life:0.35,max:0.35,size:3.5,c:'#9aa4b5',type:'sq'});
     let gone=false;
-    if(m.t>6.5){explode(m.x,m.y,8);gone=true;}
+    if(m.t>5){explode(m.x,m.y,8);gone=true;} // 5秒后自爆,不追一辈子
     if(!gone)for(const w of wingmen){if(w.inv<=0&&dist2(m.x,m.y,w.x,w.y)<(11+9)*(11+9)){hurtWingman(w);explode(m.x,m.y,10);gone=true;break;}}
     if(!gone&&player.inv<=0&&dist2(m.x,m.y,player.x,player.y)<(11+11)*(11+11)){hurtPlayer();explode(m.x,m.y,10);gone=true;}
     if(gone||m.y>VH+40||m.y<-60||m.x<-60||m.x>VW+60)eMissiles.splice(i,1);
@@ -596,14 +603,14 @@ function updEMissiles(dt){
 }
 
 /* ================= BOSS ================= */
-// 每关Boss差异化定义: L1战舰 L2螃蟹 L3蝎子 L4恐龙 L5圣诞老人 L6机器人
+// 每关Boss差异化定义: L1战舰 L2螃蟹 L3蝎子 L4恐龙 L5圣诞老人 L6机器人 (星座烙印)
 const BOSSDEF=[
-  {name:'铁血战舰',sway:[70,95,130]},
-  {name:'巨钳蟹皇',sway:[42,58,82],crab:1},
-  {name:'沙漠毒蝎王',sway:[80,110,150],scorp:1},
-  {name:'暴龙王',sway:[55,75,105],dino:1},
-  {name:'狂暴圣诞老人',sway:[62,88,124],santa:1},
-  {name:'歼星机械巨神',sway:[30,45,70],robo:1},
+  {name:'铁血战舰',zod:'摩羯座',sway:[70,95,130]},
+  {name:'巨钳蟹皇',zod:'巨蟹座',sway:[42,58,82],crab:1},
+  {name:'沙漠毒蝎王',zod:'天蝎座',sway:[80,110,150],scorp:1},
+  {name:'暴龙王',zod:'狮子座',sway:[55,75,105],dino:1},
+  {name:'狂暴圣诞老人',zod:'射手座',sway:[62,88,124],santa:1},
+  {name:'歼星机械巨神',zod:'水瓶座',sway:[30,45,70],robo:1},
 ];
 function bossDef(){return BOSSDEF[(G.level-1)%BOSSDEF.length];}
 function spawnBoss(){
@@ -661,16 +668,16 @@ function updBoss(dt){
       boss.clawT=(ph===3?2.6:3.4)/d;boss.clawAnim=0.55;
       const a0=angTo(boss.x,boss.y+40,player.x,player.y);
       for(const s of[-1,1])for(let k=0;k<3;k++){
-        const a=a0+s*(0.12+k*0.13);
+        const a=a0+s*(0.10+k*0.10); // 收敛夹角,两侧留横向逃生缝
         eBullets.push({x:boss.x+s*105,y:boss.y+30,vx:Math.cos(a)*170*d,vy:Math.sin(a)*170*d,r:5,kind:'shot'});
       }
       SND.shoot();
     }
     boss.ringT-=dt;
-    if(boss.ringT<=0){boss.ringT=(ph===3?3.4:4.6)/d;ringShot(boss.x,boss.y+20,ph===3?14:10,120*d,boss.t);}
+    if(boss.ringT<=0){boss.ringT=(ph===3?3.4:4.6)/d;ringShot(boss.x,boss.y+20,ph===3?14:10,120*d,boss.t,1);}
     if(ph>=3){
       boss.beamT-=dt;
-      if(boss.beamT<=0){boss.beamT=7/d;boss.beams.push({dx:0,warn:0.9,fire:1.1,dir:1});SND.alarm();}
+      if(boss.beamT<=0){boss.beamT=7/d;boss.beams.push({dx:0,warn:1.05,fire:1.1,dir:1});SND.alarm();}
     }
   }else if(DEF.scorp){ // ── 蝎子: 尾刺甩毒针 + 反旋毒环 ──
     boss.tailT-=dt;
@@ -686,7 +693,7 @@ function updBoss(dt){
     }
     if(ph>=2){
       boss.ringT-=dt;
-      if(boss.ringT<=0){boss.ringT=4.4/d;ringShot(boss.x,boss.y,ph===3?18:12,140*d,-boss.t);}
+      if(boss.ringT<=0){boss.ringT=4.4/d;ringShot(boss.x,boss.y,ph===3?18:12,140*d,-boss.t,1);}
     }
     if(ph>=3){
       boss.volT-=dt;
@@ -713,12 +720,12 @@ function updBoss(dt){
     }
     if(ph>=2){
       boss.fireT-=dt;
-      if(boss.fireT<=0){boss.fireT=(ph===3?4.2:6)/d;boss.breath=5;boss.breathT=0;}
+      if(boss.fireT<=0){boss.fireT=(ph===3?4.2:6)/d;boss.breath=5;boss.breathT=0;boss.breathA=angTo(boss.x,boss.y+55,player.x,player.y);} // 开火瞬间锁角,吐息期间不再追踪
       if(boss.breath>0){
         boss.breathT-=dt;
         if(boss.breathT<=0){
           boss.breathT=0.12;boss.breath--;
-          const a0=angTo(boss.x,boss.y+55,player.x,player.y);
+          const a0=boss.breathA;
           for(let k=-2;k<=2;k++){
             const a=a0+k*0.15;
             eBullets.push({x:boss.x,y:boss.y+55,vx:Math.cos(a)*240*d,vy:Math.sin(a)*240*d,r:6,kind:'fire'});
@@ -729,7 +736,7 @@ function updBoss(dt){
     }
     if(ph>=3){
       boss.ringT-=dt;
-      if(boss.ringT<=0){boss.ringT=4/d;ringShot(boss.x,boss.y+30,16,130*d,boss.t);}
+      if(boss.ringT<=0){boss.ringT=4/d;ringShot(boss.x,boss.y+30,16,130*d,boss.t,1);}
     }
   }else if(DEF.santa){ // ── 圣诞老人: 礼物抛撒 + 冰霜光束 + 驯鹿小机 ──
     boss.giftT-=dt;
@@ -741,10 +748,10 @@ function updBoss(dt){
       }
     }
     boss.ringT-=dt;
-    if(boss.ringT<=0){boss.ringT=(ph===3?3.6:5)/d;ringShot(boss.x,boss.y+15,ph===3?16:12,125*d,boss.t);}
+    if(boss.ringT<=0){boss.ringT=(ph===3?3.6:5)/d;ringShot(boss.x,boss.y+15,ph===3?16:12,125*d,boss.t,1);}
     if(ph>=2){
       boss.beamT-=dt;
-      if(boss.beamT<=0){boss.beamT=6.5/d;boss.beams.push({dx:-90,warn:0.9,fire:1.2,dir:1,c:'ice'});SND.alarm();}
+      if(boss.beamT<=0){boss.beamT=6.5/d;boss.beams.push({dx:-90,warn:1.05,fire:1.2,dir:1,c:'ice'});SND.alarm();}
     }
   }else if(DEF.robo){ // ── 机器人: 双臂抡砸 + 扫射 + ph3召唤无人僚机 ──
     boss.armT-=dt;boss.armAnim=Math.max(0,boss.armAnim-dt);
@@ -759,13 +766,13 @@ function updBoss(dt){
     boss.atkT-=dt;
     if(boss.atkT<=0){boss.atkT=(ph===3?1.2:1.6)/d;aimedShot(boss.x,boss.y+55,215*d,3,0.2);}
     boss.ringT-=dt;
-    if(boss.ringT<=0){boss.ringT=(ph===3?3.4:4.6)/d;ringShot(boss.x,boss.y+20,ph===3?16:12,135*d,boss.t);}
+    if(boss.ringT<=0){boss.ringT=(ph===3?3.4:4.6)/d;ringShot(boss.x,boss.y+20,ph===3?16:12,135*d,boss.t,1);}
     if(ph>=2){
       boss.beamT-=dt;
       if(boss.beamT<=0){
         boss.beamT=6/d;
-        boss.beams.push({dx:-110,warn:0.85,fire:1.2,dir:1});
-        boss.beams.push({dx:110,warn:0.85,fire:1.2,dir:-1});
+        boss.beams.push({dx:-110,warn:1.0,fire:1.2,dir:1});
+        boss.beams.push({dx:110,warn:1.0,fire:1.2,dir:-1});
         SND.alarm();
       }
     }
@@ -791,14 +798,14 @@ function updBoss(dt){
     boss.ringT-=dt;
     if(boss.ringT<=0){
       boss.ringT=(ph===3?3.2:4.2)/d;
-      ringShot(boss.x,boss.y+20,ph===3?16:12,135*d,boss.t);
+      ringShot(boss.x,boss.y+20,ph===3?16:12,135*d,boss.t,1);
     }
     if(ph>=2){
       boss.beamT-=dt;
       if(boss.beamT<=0){
         boss.beamT=6/d;
-        boss.beams.push({dx:-110,warn:0.85,fire:1.2,dir:1});
-        boss.beams.push({dx:110,warn:0.85,fire:1.2,dir:-1});
+        boss.beams.push({dx:-110,warn:1.0,fire:1.2,dir:1});
+        boss.beams.push({dx:110,warn:1.0,fire:1.2,dir:-1});
         SND.alarm();
       }
     }
@@ -830,8 +837,8 @@ function updBoss(dt){
     b.fire-=dt;b.dx+=b.dir*150*dt;
     const bx=boss.x+b.dx;
     if(b.fire<=0||bx<20||bx>VW-20){boss.beams.splice(i,1);continue;}
-    if(player.inv<=0&&Math.abs(player.x-bx)<15+11)hurtPlayer();
-    for(const w of Array.from(wingmen)){if(Math.abs(w.x-bx)<15+9){hurtWingman(w);break;}}
+    if(player.inv<=0&&Math.abs(player.x-bx)<9+11)hurtPlayer(); // 判定宽≈19px与视觉一致(边缘不再冤死)
+    for(const w of Array.from(wingmen)){if(Math.abs(w.x-bx)<9+9){hurtWingman(w);break;}}
   }
 }
 function hitBoss(dmg){
@@ -1013,7 +1020,7 @@ function hurtPlayer(){
     if(items.shield.hits<=0)items.shield.t=0;
     return;
   }
-  player.hp--;player.inv=1.6;G.rescueStreak=0;
+  player.hp--;player.inv=2.0;G.rescueStreak=0; // 无敌1.6→2.0s,受击后有足够脱离时间
   G.dmgFlash=0.5;G.shake=Math.min(16,G.shake+10);
   SND.hit();
   for(let i=eBullets.length-1;i>=0;i--){
@@ -1180,7 +1187,7 @@ function update(dt){
       if(dist2(b.x,b.y,w.x,w.y)<(b.r+9)*(b.r+9)){hurtWingman(w);wingHit=true;break;}
     }
     if(wingHit){eBullets.splice(i,1);continue;}
-    if(player.alive&&player.inv<=0&&dist2(b.x,b.y,player.x,player.y)<(b.r+10)*(b.r+10)){
+    if(player.alive&&player.inv<=0&&dist2(b.x,b.y,player.x,player.y)<(b.r+8)*(b.r+8)){ // 判定盒10→8,擦弹更公平
       eBullets.splice(i,1);hurtPlayer();
       if(!player.alive)break;
     }
@@ -1838,7 +1845,7 @@ function drawHUD(){
   // BOSS 血条(200红心)
   if(boss){
     const x=24,w=VW-48,y=64,h=16;
-    txtC(bossDef().name,VW/2,y-10,13,'#ffd23e','center'); // Boss名
+    txtC(bossDef().name+' · '+bossDef().zod,VW/2,y-10,13,'#ffd23e','center'); // Boss名+星座烙印
     ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(x-2,y-2,w+4,h+4);
     ctx.fillStyle='#3a0d16';ctx.fillRect(x,y,w,h);
     const frac=clamp(boss.hp/boss.maxHp,0,1);
