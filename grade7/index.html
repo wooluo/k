@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#667eea">
+<title>学霸大冒险 · 初一知识闯关</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation;}
+html,body{height:100%;}
+body{
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  background:#141428;display:flex;justify-content:center;color:#333;
+}
+#app{width:100%;max-width:520px;min-height:100vh;min-height:100dvh;position:relative;overflow:hidden;}
+.screen{display:none;position:absolute;inset:0;flex-direction:column;overflow-y:auto;}
+.screen.active{display:flex;}
+
+/* ---------- 通用按钮 ---------- */
+.btn{
+  border:none;border-radius:14px;padding:13px 22px;font-size:17px;font-weight:700;
+  background:#fff;color:#444;cursor:pointer;font-family:inherit;
+  box-shadow:0 4px 0 rgba(0,0,0,.12),0 8px 18px rgba(0,0,0,.18);
+  transition:transform .08s,box-shadow .08s;
+}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.12),0 3px 8px rgba(0,0,0,.15);}
+.btn.primary{background:linear-gradient(135deg,#ffd54f,#ffb300);color:#5d4037;}
+.btn.ghost{background:rgba(255,255,255,.9);}
+
+/* ---------- 首页 ---------- */
+#home-screen{
+  background:linear-gradient(165deg,#667eea 0%,#764ba2 60%,#9a6dd7 100%);
+  align-items:center;justify-content:center;padding:30px 24px;text-align:center;gap:14px;
+}
+.float-emoji{position:absolute;font-size:30px;opacity:.35;animation:bob 3.5s ease-in-out infinite;pointer-events:none;}
+#home-screen .logo{font-size:88px;line-height:1;filter:drop-shadow(0 10px 14px rgba(0,0,0,.3));animation:bob 3s ease-in-out infinite;}
+#home-screen h1{font-size:38px;color:#fff;letter-spacing:4px;text-shadow:0 4px 10px rgba(0,0,0,.3);margin-top:4px;}
+#home-screen .sub{color:rgba(255,255,255,.92);font-size:16px;font-weight:600;letter-spacing:1px;}
+#home-screen .icons{font-size:34px;letter-spacing:12px;margin:4px 0 10px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.25));}
+.home-btns{display:flex;flex-direction:column;gap:12px;width:min(280px,80%);}
+#home-score{color:#ffe082;font-weight:700;font-size:15px;margin-top:6px;min-height:20px;}
+.home-tip{color:rgba(255,255,255,.75);font-size:12.5px;margin-top:8px;line-height:1.7;}
+
+/* ---------- 地图 ---------- */
+#map-screen{background:linear-gradient(180deg,#2193b0 0%,#6dd5ed 100%);}
+.map-top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px;color:#fff;}
+.map-top h2{font-size:21px;letter-spacing:2px;text-shadow:0 2px 6px rgba(0,0,0,.3);}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:none;background:rgba(255,255,255,.9);font-size:18px;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.2);transition:transform .08s;}
+.icon-btn:active{transform:scale(.92);}
+.map-stats{color:#fff;font-weight:700;font-size:14px;text-align:center;text-shadow:0 1px 4px rgba(0,0,0,.3);padding:2px 0 8px;}
+#worlds{padding-bottom:6px;}
+.world{border-radius:18px;padding:14px 14px 16px;margin:12px 14px;box-shadow:0 10px 24px rgba(0,0,0,.28);color:#fff;}
+.world-head{display:flex;align-items:center;gap:10px;}
+.world-head .w-emoji{font-size:30px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.3));}
+.world-head h3{font-size:18px;letter-spacing:1px;text-shadow:0 2px 5px rgba(0,0,0,.35);flex:1;}
+.world-head .w-prog{font-size:12.5px;font-weight:700;background:rgba(0,0,0,.22);padding:4px 10px;border-radius:20px;}
+.world-desc{font-size:12.5px;opacity:.92;margin:6px 0 12px;line-height:1.6;}
+.levels{display:flex;gap:9px;}
+.lv{flex:1;min-height:76px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:rgba(255,255,255,.94);cursor:pointer;border:3px solid rgba(255,255,255,.6);transition:transform .12s;font-family:inherit;color:#333;}
+.lv:not(.locked):active{transform:scale(.93);}
+.lv .m{font-size:24px;line-height:1.1;}
+.lv .n{font-size:12px;font-weight:800;}
+.lv .stars{font-size:9px;letter-spacing:-1.5px;height:12px;color:#333;}
+.lv.locked{opacity:.5;filter:grayscale(.85);cursor:not-allowed;}
+.lv.locked .m{filter:brightness(.8);}
+.lv.boss{background:linear-gradient(160deg,#fff8e1,#ffe082);border-color:#ff6f00;}
+.lv.boss .n{color:#e65100;}
+.lv.final-boss{flex:100%;flex-direction:row;gap:12px;min-height:70px;background:linear-gradient(135deg,#fff3e0,#ffcc80);border-color:#bf360c;padding:8px;}
+.lv.final-boss .fb-txt{text-align:left;}
+.lv.final-boss .fb-txt b{display:block;font-size:16px;color:#bf360c;}
+.lv.final-boss .fb-txt span{font-size:12px;color:#5d4037;}
+.fb-wrap{margin:6px 14px 24px;}
+.done-mark{color:#e65100;font-weight:800;font-size:11px;}
+
+/* ---------- 战斗 ---------- */
+#battle-screen{overflow:hidden;}
+.battle-top{display:flex;align-items:center;gap:10px;padding:12px 14px;color:#fff;}
+#battle-title{flex:1;text-align:center;font-size:16.5px;font-weight:800;letter-spacing:1px;text-shadow:0 2px 5px rgba(0,0,0,.4);}
+#score-chip{font-size:14px;font-weight:800;background:rgba(0,0,0,.28);padding:6px 12px;border-radius:20px;}
+.stage{position:relative;display:flex;justify-content:space-between;align-items:flex-end;padding:6px 22px 14px;min-height:178px;}
+.fighter{display:flex;flex-direction:column;align-items:center;gap:5px;width:42%;}
+.hp-wrap{width:100%;display:flex;align-items:center;gap:6px;}
+.hp-bar{flex:1;height:13px;background:rgba(0,0,0,.35);border-radius:8px;overflow:hidden;border:2px solid rgba(255,255,255,.75);}
+.hp-bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#2ecc71,#7bed9f);transition:width .45s;border-radius:5px;}
+.hp-bar i.mid{background:linear-gradient(90deg,#f39c12,#ffd66b);}
+.hp-bar i.low{background:linear-gradient(90deg,#e74c3c,#ff7b7b);}
+.hp-num{font-size:11.5px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);min-width:30px;text-align:right;}
+.sprite{position:relative;font-size:54px;line-height:1.1;filter:drop-shadow(0 6px 6px rgba(0,0,0,.28));}
+#mon-sprite{animation:bob 2s ease-in-out infinite;}
+#hero-sprite{animation:bob 2.4s ease-in-out infinite;font-size:50px;}
+#hero-sprite.lunge{animation:lunge .55s ease;}
+#mon-sprite.lungeM{animation:lungeM .55s ease;}
+#mon-sprite.hurt{animation:hurtShake .45s ease !important;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes lunge{35%{transform:translateX(60px) scale(1.12) rotate(-8deg);}65%{transform:translateX(48px);}100%{transform:none;}}
+@keyframes lungeM{35%{transform:translateX(-60px) scale(1.12) rotate(8deg);}65%{transform:translateX(-48px);}100%{transform:none;}}
+@keyframes hurtShake{0%,100%{transform:translateX(0)}15%{transform:translateX(9px) scale(1.08);filter:drop-shadow(0 0 12px #ff5252);}35%{transform:translateX(-7px)}55%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.fname{font-size:13.5px;font-weight:800;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,.4);}
+.vs{position:absolute;left:50%;top:40%;transform:translateX(-50%);font-size:20px;opacity:.9;animation:bob 1.6s ease-in-out infinite;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3));}
+.bubble{position:absolute;right:10%;top:2px;background:#fff;border-radius:12px;padding:6px 11px;font-size:12.5px;font-weight:700;color:#444;opacity:0;transition:.25s;box-shadow:0 4px 10px rgba(0,0,0,.25);pointer-events:none;white-space:nowrap;z-index:6;}
+.bubble.show{opacity:1;}
+.bubble:after{content:'';position:absolute;bottom:-6px;right:20px;border:7px solid transparent;border-top-color:#fff;border-bottom:0;}
+#combo-badge{position:absolute;left:12px;top:0;background:linear-gradient(135deg,#ff512f,#dd2476);color:#fff;font-weight:900;font-size:14px;padding:5px 12px;border-radius:20px;opacity:0;transform:scale(.6);transition:.2s;box-shadow:0 4px 10px rgba(0,0,0,.3);z-index:6;}
+#combo-badge.show{opacity:1;transform:scale(1);animation:pulse .6s ease;}
+@keyframes pulse{50%{transform:scale(1.18);}}
+.float{position:absolute;left:50%;top:-4px;transform:translateX(-50%);font-weight:900;font-size:21px;animation:floatUp 1s ease-out forwards;text-shadow:0 2px 4px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap;z-index:8;font-family:inherit;}
+.float.dmg{color:#ff5252;}
+.float.heal{color:#2ecc71;}
+@keyframes floatUp{0%{opacity:0;transform:translate(-50%,12px) scale(.6);}20%{opacity:1;transform:translate(-50%,-4px) scale(1.2);}100%{opacity:0;transform:translate(-50%,-56px) scale(1);}}
+.q-area{flex:1;display:flex;flex-direction:column;gap:10px;padding:12px 14px 16px;background:rgba(255,255,255,.97);border-radius:24px 24px 0 0;box-shadow:0 -8px 26px rgba(0,0,0,.28);position:relative;}
+.timer-track{height:9px;border-radius:6px;background:#eceef3;overflow:hidden;flex:none;}
+#timer-bar{height:100%;width:100%;border-radius:6px;background:linear-gradient(90deg,#43cea2,#185a9d);transition:width .1s linear;}
+#timer-bar.warn{background:linear-gradient(90deg,#ff512f,#dd2476);}
+.q-card{background:#fff;}
+.q-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+#q-tag{font-size:12px;font-weight:800;color:#fff;padding:3px 12px;border-radius:14px;letter-spacing:1px;}
+#q-num{font-size:12.5px;font-weight:700;color:#98a1b3;}
+#q-text{font-size:19px;line-height:1.55;font-weight:700;color:#2b2f3a;padding-bottom:4px;}
+#options{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+#options button{border:2px solid #e3e6ee;background:#f7f8fc;border-radius:14px;padding:11px 10px;font-size:15.5px;line-height:1.4;font-weight:600;color:#333;cursor:pointer;display:flex;gap:9px;align-items:center;text-align:left;transition:.12s;min-height:60px;font-family:inherit;}
+#options button b{flex:0 0 auto;width:27px;height:27px;border-radius:50%;background:#e8eaf6;display:flex;align-items:center;justify-content:center;font-size:13px;color:#5c6bc0;}
+#options button:not(:disabled):active{transform:scale(.96);background:#eef1fb;}
+#options button:disabled{cursor:default;}
+#options button.right{background:#e8f8ee;border-color:#2ecc71;color:#14532d;}
+#options button.right b{background:#2ecc71;color:#fff;}
+#options button.wrong{background:#fdecea;border-color:#e74c3c;color:#7f1d1d;animation:shakeX .35s;}
+#options button.wrong b{background:#e74c3c;color:#fff;}
+@keyframes shakeX{0%,100%{transform:none}25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.kbd-hint{font-size:11.5px;color:#aab2c3;text-align:center;min-height:15px;}
+@media (max-width:359px){#options{grid-template-columns:1fr;}}
+
+/* ---------- 答案解析 ---------- */
+#explain{position:absolute;inset:0;background:rgba(20,20,40,.5);display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:.2s;z-index:30;}
+#explain.show{opacity:1;pointer-events:auto;}
+.exp-card{background:#fff;width:100%;border-radius:22px 22px 0 0;padding:20px 20px 26px;transform:translateY(40px);transition:.25s;display:flex;flex-direction:column;gap:12px;}
+#explain.show .exp-card{transform:none;}
+.exp-head{font-size:19px;font-weight:900;color:#c0392b;}
+.exp-row{font-size:15.5px;line-height:1.65;color:#374151;}
+.exp-row b{color:#111827;}
+#exp-ans{font-weight:800;color:#14532d;}
+#exp-btn{align-self:stretch;}
+
+/* ---------- 提示气泡 ---------- */
+#toast{position:absolute;top:36%;left:50%;transform:translate(-50%,-50%) scale(.7);background:rgba(255,255,255,.97);padding:10px 20px;border-radius:30px;font-weight:900;font-size:17px;opacity:0;pointer-events:none;transition:.18s;z-index:26;box-shadow:0 8px 22px rgba(0,0,0,.28);white-space:nowrap;color:#333;}
+#toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+
+/* ---------- 结果 ---------- */
+#result-screen{background:linear-gradient(180deg,#4b6cb7 0%,#182848 100%);align-items:center;justify-content:center;padding:24px;}
+.result-card{background:#fff;border-radius:24px;padding:28px 24px;width:min(360px,92%);text-align:center;box-shadow:0 16px 40px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:10px;align-items:center;position:relative;overflow:hidden;}
+#res-emoji{font-size:64px;line-height:1.1;animation:bob 2.5s ease-in-out infinite;}
+#res-title{font-size:22px;font-weight:900;color:#2b2f3a;}
+#res-stars{font-size:34px;letter-spacing:6px;min-height:44px;text-shadow:0 3px 6px rgba(0,0,0,.15);}
+.res-stats{width:100%;background:#f4f6fb;border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;gap:7px;}
+.res-stats .row{display:flex;justify-content:space-between;font-size:14.5px;color:#4b5563;}
+.res-stats .row b{color:#111827;}
+.res-btns{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:4px;}
+.confetti{position:absolute;top:-30px;font-size:20px;animation:fall linear forwards;pointer-events:none;z-index:5;}
+@keyframes fall{to{transform:translateY(560px) rotate(600deg);opacity:.1;}}
+
+/* ---------- 帮助 ---------- */
+#help-modal{position:absolute;inset:0;background:rgba(15,15,35,.6);display:none;align-items:center;justify-content:center;z-index:40;padding:24px;}
+#help-modal.show{display:flex;}
+.help-card{background:#fff;border-radius:20px;padding:24px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:12px;max-height:80%;overflow-y:auto;}
+.help-card h3{font-size:19px;color:#111827;}
+.help-card ul{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.help-card li{font-size:14.5px;line-height:1.7;color:#374151;padding-left:28px;position:relative;}
+.help-card li:before{content:'📌';position:absolute;left:0;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 首页 -->
+  <div id="home-screen" class="screen active">
+    <span class="float-emoji" style="left:8%;top:12%">📚</span>
+    <span class="float-emoji" style="right:10%;top:18%;animation-delay:.6s">✏️</span>
+    <span class="float-emoji" style="left:14%;bottom:16%;animation-delay:1.2s">🏆</span>
+    <span class="float-emoji" style="right:12%;bottom:22%;animation-delay:1.8s">⚡</span>
+    <div class="logo">🎓</div>
+    <h1>学霸大冒险</h1>
+    <div class="sub">初一知识闯关 · 答题打怪 · 通关升级</div>
+    <div class="icons">🏯 🔢 🏰 💛 📜 🌿 🌍</div>
+    <div class="home-btns">
+      <button class="btn primary" id="btn-start">🚀 开始冒险</button>
+      <button class="btn" id="btn-help">📖 玩法说明</button>
+      <button class="btn ghost" id="btn-mute">🔊 音效：开</button>
+    </div>
+    <p id="home-score"></p>
+    <p class="home-tip">七大世界：语文 · 数学 · 英语 · 道法 · 历史 · 生物 · 地理<br>击败各世界 BOSS，解锁「期末大决战」！</p>
+  </div>
+
+  <!-- 地图 -->
+  <div id="map-screen" class="screen">
+    <div class="map-top">
+      <button class="icon-btn" id="btn-back-home">🏠</button>
+      <h2>冒 险 地 图</h2>
+      <button class="icon-btn" id="btn-reset">🗑️</button>
+    </div>
+    <div class="map-stats" id="map-stats"></div>
+    <div id="worlds"></div>
+    <div class="fb-wrap" id="final-wrap"></div>
+  </div>
+
+  <!-- 战斗 -->
+  <div id="battle-screen" class="screen">
+    <div class="battle-top">
+      <button class="icon-btn" id="quit-btn">✕</button>
+      <div id="battle-title"></div>
+      <div id="score-chip">💰 0</div>
+    </div>
+    <div class="stage" id="stage">
+      <div class="fighter">
+        <div class="hp-wrap">
+          <div class="hp-bar"><i id="hero-bar"></i></div>
+          <span class="hp-num" id="hero-hp-num">100</span>
+        </div>
+        <div class="sprite" id="hero-sprite">🧑‍🎓</div>
+        <div class="fname">学霸勇士</div>
+      </div>
+      <div class="vs">⚔️</div>
+      <div class="fighter">
+        <div class="hp-wrap">
+          <div class="hp-bar"><i id="mon-bar"></i></div>
+          <span class="hp-num" id="mon-hp-num">100</span>
+        </div>
+        <div class="sprite" id="mon-sprite">👾</div>
+        <div class="fname" id="mon-name">怪物</div>
+      </div>
+      <div class="bubble" id="mon-bubble"></div>
+      <div id="combo-badge"></div>
+    </div>
+    <div class="q-area">
+      <div class="timer-track"><div id="timer-bar"></div></div>
+      <div class="q-card">
+        <div class="q-top"><span id="q-tag">语文</span><span id="q-num">第 1 题</span></div>
+        <div id="q-text"></div>
+      </div>
+      <div id="options"></div>
+      <div class="kbd-hint" id="kbd-hint">电脑上可按 1-4 或 A-D 键选择答案</div>
+    </div>
+    <div id="toast"></div>
+    <div id="explain">
+      <div class="exp-card">
+        <div class="exp-head" id="exp-head"></div>
+        <div class="exp-row"><b>正确答案：</b><span id="exp-ans"></span></div>
+        <div class="exp-row"><b>💡 解析：</b><span id="exp-tip"></span></div>
+        <button class="btn primary" id="exp-btn">继续 ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 结果 -->
+  <div id="result-screen" class="screen">
+    <div class="result-card" id="result-card">
+      <div id="res-emoji">🏆</div>
+      <div id="res-title"></div>
+      <div id="res-stars"></div>
+      <div class="res-stats">
+        <div class="row"><span>本关得分</span><b id="res-score">0</b></div>
+        <div class="row"><span>答题正确</span><b id="res-acc">0 / 0</b></div>
+        <div class="row"><span>最高连击</span><b id="res-combo">0</b></div>
+        <div class="row"><span>剩余生命</span><b id="res-hp">0</b></div>
+      </div>
+      <div class="res-btns">
+        <button class="btn primary" id="btn-next" style="display:none">➡️ 下一关</button>
+        <button class="btn" id="btn-retry">🔁 再来一次</button>
+        <button class="btn ghost" id="btn-map">🗺️ 返回地图</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 帮助 -->
+  <div id="help-modal">
+    <div class="help-card">
+      <h3>📖 玩法说明</h3>
+      <ul>
+        <li>每场战斗会出题：<b>答对 = 攻击怪物</b>，答错或超时 = 被怪物攻击。</li>
+        <li>回答越快伤害越高（剩下一半时间以上有⚡疾速加成）。</li>
+        <li>连续答对 3 题，知识之力会为你<b>恢复生命</b>！</li>
+        <li>答错时会显示<b>正确答案和解析</b>，记住它，下次击败它！</li>
+        <li>每个世界 4 小关 + 1 个 BOSS 关，通关得 ⭐（生命越多星越多）。</li>
+        <li>三大世界的 BOSS 全部击败后，解锁最终关「期末大决战」。</li>
+        <li>电脑上可用键盘 <b>1-4 / A-D</b> 选答案，回车继续。</li>
+      </ul>
+      <button class="btn primary" id="btn-help-close">知道啦！</button>
+    </div>
+  </div>
+
+</div>
+<script>
+'use strict';
+/* ================= 工具 ================= */
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const rnd = arr => arr[Math.floor(Math.random() * arr.length)];
+
+/* ================= 音效（WebAudio） ================= */
+const Sfx = {
+  ctx: null, muted: false,
+  init(){
+    if(!this.ctx){
+      try{ this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+    }
+    if(this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  tone(f, d, type, vol, delay){
+    if(this.muted || !this.ctx) return;
+    const t = this.ctx.currentTime + (delay || 0);
+    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.type = type || 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(vol || .15, t);
+    g.gain.exponentialRampToValueAtTime(.001, t + d);
+    o.connect(g); g.connect(this.ctx.destination);
+    o.start(t); o.stop(t + d + .05);
+  },
+  click(){ this.tone(620, .06, 'triangle', .08); },
+  correct(){ this.tone(523, .1, 'sine', .16); this.tone(784, .2, 'sine', .16, .09); },
+  wrong(){ this.tone(196, .22, 'sawtooth', .1); this.tone(147, .3, 'sawtooth', .09, .1); },
+  slash(){ this.tone(900, .07, 'square', .05); this.tone(430, .1, 'square', .045, .06); },
+  heal(){ this.tone(659, .12, 'sine', .12); this.tone(880, .22, 'sine', .12, .1); },
+  win(){ [523, 659, 784, 1047].forEach((f, i) => this.tone(f, .18, 'triangle', .14, i * .13)); },
+  lose(){ [392, 330, 262].forEach((f, i) => this.tone(f, .26, 'triangle', .12, i * .16)); }
+};
+document.addEventListener('pointerdown', () => Sfx.init());
+
+/* ================= 题库（答案均为选项 A，展示时打乱顺序） ================= */
+const WORLDS = [
+  {
+    id:'yuwen', name:'语文古国', emoji:'🏯', tag:'语文', color:'#e74c3c',
+    mapBg:'linear-gradient(150deg,#e6645a,#c0392b)',
+    battleBg:'linear-gradient(180deg,#e88873 0%,#f6c99f 70%,#f9e0c0 100%)',
+    desc:'古诗文的国度，墨香里藏着小妖怪',
+    time:25,
+    monsters:[{emoji:'📜',name:'卷轴小妖'},{emoji:'🖋️',name:'墨水瓶怪'},{emoji:'🎭',name:'脸谱精灵'},{emoji:'🐉',name:'诗韵神龙'}],
+    boss:{emoji:'📕',name:'文言老魔'},
+    taunts:['之乎者也，你会吗？','这首诗你背过吗？','嘻嘻，接招！'],
+    pool:[
+      {q:'《观沧海》的作者是谁？',options:['曹操','李白','杜甫','王维'],a:0,
+       tip:'《观沧海》是东汉末年曹操所作，选自《步出夏门行》，描写了大海吞吐日月星辰的壮阔景象。'},
+      {q:'"夕阳西下，断肠人在天涯"出自哪部作品？',options:['《天净沙·秋思》','《静夜思》','《春望》','《登鹳雀楼》'],a:0,
+       tip:'出自元代马致远的《天净沙·秋思》，这首小令被誉为"秋思之祖"。'},
+      {q:'"学而时习之，不亦说乎"中的"说"是什么意思？',options:['同"悦"，愉快','说话','说服','游说'],a:0,
+       tip:'"说"是通假字，同"悦"，读 yuè，意为愉快。出自《论语·学而》。'},
+      {q:'《论语》记录的是谁的言行？',options:['孔子及其弟子','孟子及其弟子','老子','墨子'],a:0,
+       tip:'《论语》是儒家经典，记录孔子及其弟子的言行，由孔子弟子及再传弟子编纂而成。'},
+      {q:'"海日生残夜，江春入旧年"出自哪首诗？',options:['《次北固山下》','《观沧海》','《天净沙·秋思》','《夜雨寄北》'],a:0,
+       tip:'出自唐代王湾的《次北固山下》，蕴含着新事物孕育于旧事物之中的哲理。'},
+      {q:'"我寄愁心与明月，随君直到夜郎西"表达了什么情感？',options:['对友人王昌龄被贬远方的同情与牵挂','对家乡的思念','对边塞风光的赞美','对月亮的喜爱'],a:0,
+       tip:'出自李白《闻王昌龄左迁龙标遥有此寄》，诗人把对友人的牵挂寄托给明月。'},
+      {q:'"酝酿"的正确读音是？',options:['yùn niàng','yūn niáng','wēn niàng','yùn liáng'],a:0,
+       tip:'酝酿 yùn niàng，本义是造酒的发酵过程，在《春》里形容气息在空气中慢慢形成。'},
+      {q:'"红的像火，粉的像霞，白的像雪"主要运用了什么修辞？',options:['比喻、排比','拟人','夸张','对偶'],a:0,
+       tip:'出自朱自清《春》，三个结构相似的比喻句连用，既是比喻又构成排比。'},
+      {q:'《西游记》的作者是？',options:['吴承恩','罗贯中','施耐庵','曹雪芹'],a:0,
+       tip:'吴承恩（明）写《西游记》；罗贯中《三国演义》、施耐庵《水浒传》、曹雪芹《红楼梦》。'},
+      {q:'《朝花夕拾》的作者是？',options:['鲁迅','冰心','老舍','朱自清'],a:0,
+       tip:'《朝花夕拾》是鲁迅回忆童年、少年和青年时期生活的散文集，原题《旧事重提》。'},
+      {q:'敬辞"令堂"指的是？',options:['对方的母亲','对方的父亲','自己的母亲','自己的父亲'],a:0,
+       tip:'"令尊"指对方父亲，"令堂"指对方母亲；称自己的父亲用"家父"，母亲用"家母"。'},
+      {q:'下列词语书写完全正确的一项是？',options:['花枝招展','花支招展','华枝招展','花技招展'],a:0,
+       tip:'正确写法是"花枝招展"，出自朱自清《春》，形容女子打扮得十分漂亮。'},
+      {q:'《次北固山下》"乡书何处达"的下一句是？',options:['归雁洛阳边','归雁洛阳见','北雁洛阳边','归鸟洛阳边'],a:0,
+       tip:'"乡书何处达？归雁洛阳边。"诗人借北归的大雁捎信，寄托思乡之情。'},
+      {q:'《天净沙·秋思》中直接点明主旨的句子是？',options:['断肠人在天涯','枯藤老树昏鸦','小桥流水人家','古道西风瘦马'],a:0,
+       tip:'"断肠人在天涯"直抒胸臆，点出天涯游子孤独愁苦的思乡之情。'},
+      {q:'"非淡泊无以明志，非宁静无以致远"出自？',options:['诸葛亮的《诫子书》','孔子的《论语》','《孟子》','《韩愈文集》'],a:0,
+       tip:'出自诸葛亮《诫子书》，告诫儿子要淡泊宁静地修身治学。'},
+      {q:'"自古逢秋悲寂寥，我言秋日胜春朝"的作者是？',options:['刘禹锡','马致远','王湾','李商隐'],a:0,
+       tip:'出自刘禹锡《秋词》，一反悲秋传统，充满豪迈乐观的情怀。'},
+      {q:'"君问归期未有期，巴山夜雨涨秋池"的作者是？',options:['李商隐','李白','杜牧','白居易'],a:0,
+       tip:'出自李商隐《夜雨寄北》，写尽羁旅之愁与对团聚的期盼。'},
+      {q:'"僵卧孤村不自哀，尚思为国戍轮台"表达了诗人怎样的情怀？',options:['年迈仍渴望报效国家的爱国情怀','对家乡的深深思念','隐居山林的闲适','对衰老的感伤'],a:0,
+       tip:'出自陆游《十一月四日风雨大作》，诗人虽年迈体衰，仍想为国守卫边疆。'},
+      {q:'《咏雪》中说出"未若柳絮因风起"的是谁？',options:['谢道韫','谢安','黄香','陈元方'],a:0,
+       tip:'出自《世说新语·言语》。谢道韫把雪比作柳絮，比喻精妙，后世用"咏絮之才"称赞有文才的女性。'},
+      {q:'"陈太丘与友期行，期日中"中"期"的意思是？',options:['约定','期望','日期','学期'],a:0,
+       tip:'"期"意为约定。"陈太丘与友期行"即陈太丘和朋友约定同行。'},
+      {q:'"吾日三省吾身"中的"三"表示什么？',options:['泛指多次','正好三次','第三天','三个人'],a:0,
+       tip:'古文中的"三""九"常是虚数，泛指多次，不一定是确数。'},
+      {q:'"学而不思则罔，思而不学则殆"中"罔"的意思是？',options:['迷惑而无所适从','欺骗','网罗','危险'],a:0,
+       tip:'罔：感到迷茫而无所适从；殆：疑惑（精神疲倦而无所得）。学习和思考要结合起来。'},
+      {q:'《狼》的作者是谁？',options:['蒲松龄','曹雪芹','吴承恩','罗贯中'],a:0,
+       tip:'《狼》选自蒲松龄的《聊斋志异》，讲述屠户智斗两狼的故事。'},
+      {q:'《狼》中"其一犬坐于前"的"犬"的用法是？',options:['名词作状语，像狗一样','名词，指狗','动词，咬','形容词'],a:0,
+       tip:'"犬坐"即像狗一样蹲坐，"犬"修饰"坐"的方式，是名词作状语。'},
+      {q:'《济南的冬天》的作者是？',options:['老舍','朱自清','郁达夫','巴金'],a:0,
+       tip:'老舍，原名舒庆春，字舍予，代表作还有《骆驼祥子》《茶馆》。'},
+      {q:'《从百草园到三味书屋》选自哪部作品？',options:['《朝花夕拾》','《呐喊》','《野草》','《彷徨》'],a:0,
+       tip:'选自鲁迅的回忆性散文集《朝花夕拾》，写童年在百草园玩耍和在三味书屋读书的生活。'},
+      {q:'《再塑生命的人》中"再塑"了海伦·凯勒生命的人是？',options:['莎莉文老师','海伦的母亲','马克·吐温','一位医生'],a:0,
+       tip:'安妮·莎莉文老师以极大的耐心和爱心引导又盲又聋的海伦·凯勒走出黑暗，重获"生命"。'},
+      {q:'"峨眉山月半轮秋，影入平羌江水流"的作者是？',options:['李白','杜甫','王维','白居易'],a:0,
+       tip:'出自李白《峨眉山月歌》，连用五个地名仍自然流畅，是少年的第一次蜀中远行之作。'},
+      {q:'"正是江南好风景，落花时节又逢君"中的"君"指谁？',options:['李龟年','杜甫','王维','岑参'],a:0,
+       tip:'出自杜甫《江南逢李龟年》。李龟年是著名乐师，两位漂泊之人在江南重逢，感慨时代盛衰。'},
+      {q:'"不知何处吹芦管，一夜征人尽望乡"表达了什么情感？',options:['戍边将士的思乡之情','田园生活的乐趣','送别友人的不舍','建功立业的豪情'],a:0,
+       tip:'出自李益《夜上受降城闻笛》，芦笛声勾起征人无尽的乡愁。'},
+      {q:'"河流大野犹嫌束，山入潼关不解平"（《潼关》）的作者是？',options:['谭嗣同','梁启超','龚自珍','康有为'],a:0,
+       tip:'出自近代维新志士谭嗣同的《潼关》，写出了冲决束缚、桀骜不驯的少年意气。'},
+      {q:'成语"杞人忧天"现在用来比喻什么？',options:['不必要的或缺乏根据的忧虑','关心天下大事','深谋远虑','胆大妄为'],a:0,
+       tip:'出自《列子·天瑞》，讽刺那种毫无根据的担心。'},
+      {q:'"丁氏穿井得一人"的故事告诉我们什么道理？',options:['传闻往往失真，不可轻信','打井十分辛苦','要节约用水','人多力量大'],a:0,
+       tip:'"得一人"本是"得到一个人的劳力"，传来传去变成"挖出一个人"。凡事要调查研究，以讹传讹会闹笑话。'},
+      {q:'成语"温故知新"出自哪部典籍？',options:['《论语》','《孟子》','《庄子》','《左传》'],a:0,
+       tip:'出自《论语·为政》："温故而知新，可以为师矣。'},
+      {q:'"人声鼎沸"是什么意思？',options:['人声嘈杂，像水在鼎里沸腾一样','声音低沉压抑','非常安静','议论纷纷没有结论'],a:0,
+       tip:'鼎沸：鼎里的水烧开翻滚。形容人声嘈杂喧闹。'},
+      {q:'下列成语使用正确的一项是？',options:['教室里人声鼎沸，大家讨论得热火朝天','他各得其所地站在门口','小心翼翼的花儿开放了','他花枝招展地跑完了全程'],a:0,
+       tip:'"花枝招展""小心翼翼"的对象用错，"各得其所"指每个人或事物都得到合适的安排。'},
+      {q:'"小草偷偷地从土里钻出来"运用了什么修辞？',options:['拟人','比喻','夸张','排比'],a:0,
+       tip:'"偷偷地""钻"把小草当作人来写，是拟人，写出了春草在不经意间萌发的情态。'},
+      {q:'"春天像刚落地的娃娃，从头到脚都是新的"运用的比喻是？',options:['明喻（本体喻体都出现，有"像"）','暗喻','借喻','没有比喻'],a:0,
+       tip:'有"像"字连接本体"春天"和喻体"娃娃"，是典型的明喻（比喻的一种）。'},
+      {q:'敬辞"令爱"（令嫒）指的是？',options:['对方的女儿','对方的母亲','对方的哥哥','自己的女儿'],a:0,
+       tip:'"令"族敬辞：令尊（对方父）、令堂（对方母）、令郎（对方儿）、令爱（对方女）。'},
+      {q:'谦称自己的住所用哪个词？',options:['寒舍','令府','贵宅','华堂'],a:0,
+       tip:'谦辞：寒舍（自己的家）、拙见（自己的意见）、家父家母（自己父母）、见谅（请原谅我）。'},
+      {q:'《次北固山下》"潮平两岸阔"的下一句是？',options:['风正一帆悬','风正一船悬','潮平一帆悬','帆悬风正来'],a:0,
+       tip:'"潮平两岸阔，风正一帆悬。"对仗工整，写出了江面开阔、行船顺畅的景象。'},
+      {q:'《观沧海》"日月之行"的下一句是？',options:['若出其中','若出其里','星汉灿烂','山岛竦峙'],a:0,
+       tip:'"日月之行，若出其中；星汉灿烂，若出其里。"以奇特的想象写出大海吞吐日月的气概。'},
+      {q:'《秋词》"晴空一鹤排云上"的下一句是？',options:['便引诗情到碧霄','便引诗情到云霄','我言秋日胜春朝','自古逢秋悲寂寥'],a:0,
+       tip:'"便引诗情到碧霄"。"碧霄"指蓝天，注意不要误写成"云霄"。'},
+      {q:'《十一月四日风雨大作》"夜阑卧听风吹雨"的下一句是？',options:['铁马冰河入梦来','铁马金戈入梦来','尚思为国戍轮台','僵卧孤村不自哀'],a:0,
+       tip:'"夜阑卧听风吹雨，铁马冰河入梦来。"风雨声入梦化作铁马冰河，报国之心至老不渝。'},
+      {q:'"三军可夺帅也，匹夫不可夺志也"强调的是什么？',options:['志向坚定，不可动摇','军队纪律严明','帅才十分难得','人人都要当兵'],a:0,
+       tip:'军队的主帅可以更换，普通人的志向却不容剥夺，强调坚守志向的重要。'},
+      {q:'"不义而富且贵，于我如浮云"是什么意思？',options:['用不正当手段得来的富贵，我把它看作浮云','富贵像浮云一样来去匆匆','我喜爱天上的浮云','贫穷使我快乐'],a:0,
+       tip:'孔子认为不符合道义的荣华富贵毫无价值，体现了重义轻利的价值观。'},
+      {q:'《诫子书》"非学无以广才"的下一句是？',options:['非志无以成学','非静无以成学','非淡泊无以明志','非宁静无以致远'],a:0,
+       tip:'"非学无以广才，非志无以成学。"不学习就无法增长才干，没有志向就无法学有所成。'},
+      {q:'"黄晕"的"晕"正确读音是？',options:['yùn','yūn','hūn','yún'],a:0,
+       tip:'黄晕 yùn，指昏黄的月晕或灯光的光圈，"晕"读第四声。'},
+      {q:'"贮蓄"的正确读音是？',options:['zhù xù','chǔ xù','zhù chù','zhū xù'],a:0,
+       tip:'贮蓄 zhù xù，储存、积蓄。《济南的冬天》里写水"贮蓄着绿色"。'},
+      {q:'"应和"的"和"正确读音是？',options:['hè','hé','huo','hú'],a:0,
+       tip:'应和 yìng hè，(声音、语言、行动)相呼应。"和"是多音字：和平hé、应和hè、和面huó、打麻将和牌hú。'},
+      {q:'"吝啬"的正确读音是？',options:['lìn sè','lín sè','lìn qiàn','lín xī'],a:0,
+       tip:'吝啬 lìn sè，过分爱惜自己的钱财，当用不用。'},
+      {q:'下列词语没有错别字的一项是？',options:['呼朋引伴','呼朋引半','呼明引伴','呼朋引绊'],a:0,
+       tip:'正确写法是"呼朋引伴"，出自《春》，呼唤朋友，招引同伴。'},
+      {q:'下列词语字形正确的一项是？',options:['诀别','决别','绝别','觖别'],a:0,
+       tip:'诀别指分别（多指不易再见的），用"讠"旁的"诀"，如"诀窍""口诀"。'},
+      {q:'《西游记》中白龙马原来是？',options:['西海龙王的三太子','东海龙王的儿子','天蓬元帅','卷帘大将'],a:0,
+       tip:'白龙马原是西海龙王三太子，因纵火烧了殿上明珠被贬，后化作白马驮唐僧取经。'},
+      {q:'《朝花夕拾》中给少年鲁迅买来《山海经》的是谁？',options:['长妈妈（阿长）','藤野先生','衍太太','他的父亲'],a:0,
+       tip:'阿长是鲁迅儿时的保姆，她不识字却为鲁迅买来了他渴慕已久的《山海经》，让鲁迅对她"发生新的敬意"。'},
+      {q:'《行军九日思长安故园》的作者是？',options:['岑参','高适','王昌龄','李益'],a:0,
+       tip:'岑参，盛唐边塞诗人。"强欲登高去，无人送酒来"写重阳日在军中的思乡之情。'},
+      {q:'"何当共剪西窗烛"的上一句是？',options:['巴山夜雨涨秋池','君问归期未有期','却话巴山夜雨时','夜阑卧听风吹雨'],a:0,
+       tip:'"君问归期未有期，巴山夜雨涨秋池。何当共剪西窗烛，却话巴山夜雨时。"四句中两见"巴山夜雨"，构思巧妙。'},
+      {q:'《天净沙·秋思》属于什么体裁？',options:['散曲（小令）','律诗','绝句','词'],a:0,
+       tip:'"天净沙"是曲牌名，"秋思"是题目。这是元代散曲小令，共二十八字。'},
+      {q:'《世说新语》的作者是？',options:['刘义庆','刘向','干宝','蒲松龄'],a:0,
+       tip:'《世说新语》是南朝宋刘义庆组织编写的志人小说集，主要记录魏晋名士的言行轶事。'},
+      {q:'《论语》中体现"学习与思考要结合"的一句是？',options:['学而不思则罔，思而不学则殆','三人行，必有我师焉','温故而知新','有朋自远方来，不亦乐乎'],a:0,
+       tip:'"罔"是只学习不思考的后果，"殆"是只思考不学习的后果——学思必须并重。'},
+    ]
+  },
+  {
+    id:'shuxue', name:'数学迷城', emoji:'🔢', tag:'数学', color:'#2980b9',
+    mapBg:'linear-gradient(150deg,#4a90d9,#1a5dab)',
+    battleBg:'linear-gradient(180deg,#5aa9e6 0%,#a8d5e8 70%,#d6f0fa 100%)',
+    desc:'数字与符号构筑的迷宫，小心陷阱！',
+    time:30,
+    monsters:[{emoji:'👾',name:'数字小怪'},{emoji:'🧮',name:'算盘妖'},{emoji:'📏',name:'量角刺客'},{emoji:'🤖',name:'方程机器人'}],
+    boss:{emoji:'🧠',name:'烧脑大魔王'},
+    taunts:['算错了要挨打哦！','这道题超难der~','X 到底等于几？'],
+    pool:[
+      {q:'−3 的绝对值是？',options:['3','−3','±3','1/3'],a:0,
+       tip:'负数的绝对值是它的相反数：|−3| = 3。绝对值表示数轴上的点到原点的距离。'},
+      {q:'(−2) + (−5) = ？',options:['−7','7','−3','3'],a:0,
+       tip:'同号两数相加，取相同的符号，并把绝对值相加：−(2+5) = −7。'},
+      {q:'(−3) × 4 = ？',options:['−12','12','−7','7'],a:0,
+       tip:'异号相乘得负，再把绝对值相乘：−(3×4) = −12。'},
+      {q:'−2² = ？',options:['−4','4','−8','8'],a:0,
+       tip:'−2² = −(2×2) = −4。注意：它和 (−2)² = 4 不一样，乘方的优先级高于取相反数。'},
+      {q:'若 |a| = 5，则 a = ？',options:['5 或 −5','5','−5','25'],a:0,
+       tip:'绝对值等于 5 的数有两个，它们互为相反数：a = 5 或 a = −5。'},
+      {q:'数轴上表示 −2 和 3 的两点之间的距离是？',options:['5','1','−5','6'],a:0,
+       tip:'两点距离 = |3 − (−2)| = |3 + 2| = 5。距离不可能是负数。'},
+      {q:'下列比较大小正确的是？',options:['−5 < −3','−5 > −3','−3 < −5','−5 = −3'],a:0,
+       tip:'两个负数比较大小，绝对值大的反而小：|−5| > |−3|，所以 −5 < −3。'},
+      {q:'方程 3x + 5 = 20 的解是？',options:['x = 5','x = 15','x = −5','x = 25/3'],a:0,
+       tip:'移项得 3x = 15，系数化为 1，得 x = 5。'},
+      {q:'单项式 −3x²y 的次数是？',options:['3','2','1','−3'],a:0,
+       tip:'单项式的次数 = 所有字母的指数之和：2 + 1 = 3 次；−3 是系数。'},
+      {q:'合并同类项：3x + 2x = ？',options:['5x','5x²','6x','6x²'],a:0,
+       tip:'合并同类项时系数相加，字母和指数不变：3x + 2x = 5x。'},
+      {q:'方程 2x − 7 = 5x + 8 的解是？',options:['x = −5','x = 5','x = −1','x = 1'],a:0,
+       tip:'移项：2x − 5x = 8 + 7，得 −3x = 15，所以 x = −5。'},
+      {q:'一个数的 3 倍加上 1 等于 16，设这个数为 x，可列方程？',options:['3x + 1 = 16','3(x + 1) = 16','x/3 + 1 = 16','3x − 1 = 16'],a:0,
+       tip:'"3 倍加上 1"即 3x + 1 = 16，解得 x = 5。注意 3(x+1) 表示"3 倍的和"。'},
+      {q:'(−1)¹⁰⁰ = ？',options:['1','−1','100','0'],a:0,
+       tip:'−1 的偶次幂等于 1，奇次幂等于 −1。100 是偶数，所以结果是 1。'},
+      {q:'长方体一共有多少条棱？',options:['12 条','6 条','8 条','10 条'],a:0,
+       tip:'长方体有 6 个面、8 个顶点、12 条棱。'},
+      {q:'45° 的余角是？',options:['45°','135°','90°','30°'],a:0,
+       tip:'和为 90° 的两个角互为余角：90° − 45° = 45°。（和为 180° 则互为补角）'},
+      {q:'若 x = 2 是方程 ax + 3 = 7 的解，则 a = ？',options:['2','5','−2','1/2'],a:0,
+       tip:'把 x = 2 代入方程：2a + 3 = 7，得 2a = 4，所以 a = 2。'},
+      {q:'|−9| − |−4| = ？',options:['5','−5','13','−13'],a:0,
+       tip:'先化简绝对值：|−9| = 9，|−4| = 4，所以 9 − 4 = 5。'},
+      {q:'某商品原价 100 元，打八折出售，售价是？',options:['80 元','20 元','108 元','120 元'],a:0,
+       tip:'打八折即按原价的 80% 出售：100 × 0.8 = 80（元）。'},
+      {q:'绝对值小于 3 的整数共有？',options:['5 个','3 个','2 个','4 个'],a:0,
+       tip:'绝对值小于 3 的整数有 −2、−1、0、1、2，一共 5 个（别漏了 0）。'},
+      {q:'方程 2(x − 1) = 6 的解是？',options:['x = 4','x = 3','x = 5','x = −2'],a:0,
+       tip:'去括号：2x − 2 = 6，得 2x = 8，所以 x = 4。'},
+      {q:'−(−5) = ?',options:['5','−5','±5','1/5'],a:0,
+       tip:'−(−5) 表示 −5 的相反数。负数的相反数是正数，所以 −(−5) = 5。'},
+      {q:'−2/3 的倒数是？',options:['−3/2','3/2','2/3','−2/3'],a:0,
+       tip:'乘积为 1 的两个数互为倒数。−2/3 × (−3/2) = 1，注意倒数要带着负号。'},
+      {q:'下列说法正确的是？',options:['0 既不是正数，也不是负数','0 是最小的正数','0 是最大的负数','0 没有相反数'],a:0,
+       tip:'0 是正数和负数的分界：它不是正数也不是负数；0 的相反数还是 0。'},
+      {q:'最大的负整数是？',options:['−1','1','0','不存在'],a:0,
+       tip:'在数轴上，−1 是离原点最近的负整数，所以它是最大的负整数；最小的正整数是 1。'},
+      {q:'(−3)² = ?',options:['9','−9','6','−6'],a:0,
+       tip:'负数的偶次幂是正数：(−3)² = (−3)×(−3) = 9。注意与 −3² = −9 区分。'},
+      {q:'(−2)³ = ?',options:['−8','8','−6','6'],a:0,
+       tip:'负数的奇次幂是负数：(−2)³ = (−2)×(−2)×(−2) = −8。'},
+      {q:'567000 用科学记数法表示为？',options:['5.67 × 10⁵','56.7 × 10⁴','5.67 × 10⁶','0.567 × 10⁶'],a:0,
+       tip:'科学记数法写成 a × 10ⁿ（1 ≤ |a| < 10），小数点向左移 5 位，所以是 5.67 × 10⁵。'},
+      {q:'−5 + 2 − (−3) = ?',options:['0','−10','−6','4'],a:0,
+       tip:'减去 −3 等于加 3：−5 + 2 + 3 = 0。'},
+      {q:'(−12) ÷ 3 = ?',options:['−4','4','−36','−9'],a:0,
+       tip:'异号相除得负，绝对值相除：−(12 ÷ 3) = −4。'},
+      {q:'(−6) ÷ (−2) = ?',options:['3','−3','4','−4'],a:0,
+       tip:'同号相除得正：6 ÷ 2 = 3，所以结果是 3。'},
+      {q:'(−8) × (1/2 − 1/4 + 1/8) = ?',options:['−3','3','−1','−4'],a:0,
+       tip:'用乘法分配律：−8×1/2 + 8×1/4 − 8×1/8 = −4 + 2 − 1 = −3。'},
+      {q:'多项式 2x² − 3x + 1 是几次几项式？',options:['二次三项式','三次二项式','二次二项式','一次三项式'],a:0,
+       tip:'最高次项是 2x²（次数 2），共三个项，所以是二次三项式。'},
+      {q:'多项式 x² − x − 6 的常数项是？',options:['−6','6','−1','1'],a:0,
+       tip:'不含字母的项叫常数项，是 −6。注意符号要带上。'},
+      {q:'单项式 −5ab² 的系数是？',options:['−5','5','3','−5ab²'],a:0,
+       tip:'系数是字母前的数字因数 −5；次数是 a、b 指数之和 1+2=3。'},
+      {q:'下列与 3x²y 是同类项的是？',options:['−yx²','3x²','3xy²','x²y²'],a:0,
+       tip:'同类项要求字母相同且相同字母的指数也相同：x²y = x²y ✓，字母顺序不影响。'},
+      {q:'合并同类项：7a − 3a + 2a = ?',options:['6a','6a²','12a','8a'],a:0,
+       tip:'系数相加减：7 − 3 + 2 = 6，字母部分不变，得 6a。'},
+      {q:'去括号：a − (b − c) = ?',options:['a − b + c','a − b − c','a + b − c','a + b + c'],a:0,
+       tip:'括号前是负号，去掉括号后每一项都要变号：−b + c。'},
+      {q:'化简：3(2x − 1) − 2(x + 1) = ?',options:['4x − 5','4x − 1','4x + 1','4x − 3'],a:0,
+       tip:'先去括号：6x − 3 − 2x − 2，再合并同类项得 4x − 5。'},
+      {q:'当 x = −1 时，代数式 2x + 3 的值是？',options:['1','−1','5','−5'],a:0,
+       tip:'代入：2×(−1) + 3 = −2 + 3 = 1。'},
+      {q:'当 x = 2 时，x² − x 的值是？',options:['2','0','4','6'],a:0,
+       tip:'代入：2² − 2 = 4 − 2 = 2。先算平方再算减法。'},
+      {q:'"a 与 b 的和的 2 倍"用代数式表示为？',options:['2(a + b)','2a + b','a + 2b','2ab'],a:0,
+       tip:'先求和 (a + b)，再乘 2。注意 2a + b 表示"a 的 2 倍与 b 的和"。'},
+      {q:'"比 x 的 3 倍多 5 的数"表示为？',options:['3x + 5','3(x + 5)','x/3 + 5','5x + 3'],a:0,
+       tip:'x 的 3 倍是 3x，多 5 就加 5：3x + 5。'},
+      {q:'下列各式中是方程的是？',options:['x + 3 = 7','2 + 3 = 5','x + 1','x − 1 > 2'],a:0,
+       tip:'方程必须同时满足：①含有未知数；②是等式。B 没有未知数，C 不是等式，D 是不等式。'},
+      {q:'等式 2x = 6 的两边同时（　　），得到 x = 3？',options:['除以 2','乘 2','加 2','减 2'],a:0,
+       tip:'等式两边同乘一个数或除以一个不为 0 的数，结果仍是等式。'},
+      {q:'方程 x/2 − 1 = 3 的解是？',options:['x = 8','x = 4','x = 2','x = 6'],a:0,
+       tip:'移项：x/2 = 4，两边同乘 2，得 x = 8。'},
+      {q:'方程 3(x + 2) = x + 4 的解是？',options:['x = −1','x = 1','x = −2','x = 2'],a:0,
+       tip:'去括号：3x + 6 = x + 4，移项合并：2x = −2，所以 x = −1。'},
+      {q:'一个数的一半比这个数小 4，设这个数为 x，可列方程？',options:['x − x/2 = 4','x/2 − x = 4','x + x/2 = 4','x/2 = 4'],a:0,
+       tip:'"比 x 小 4"即 x − x/2 = 4，解得 x = 8。验证：8 的一半 4，确实比 8 小 4。'},
+      {q:'三个连续整数的和是 18，则中间的那个数是？',options:['6','5','7','4'],a:0,
+       tip:'设中间数为 m，则 (m−1) + m + (m+1) = 18，3m = 18，m = 6，即 5、6、7。'},
+      {q:'某班共 45 人，男生比女生多 5 人。设女生 x 人，可列方程？',options:['x + (x + 5) = 45','x − 5 = 45','x + 5 = 45','2x + 5 = 90'],a:0,
+       tip:'女生 x，男生 x + 5，相加等于全班 45。解得女生 20 人、男生 25 人。'},
+      {q:'关于直线、射线、线段，下列说法正确的是？',options:['射线有一个端点','直线有一个端点','线段向两方无限延伸','射线有两个端点'],a:0,
+       tip:'直线无端点、向两方无限延伸；射线有一个端点、向一方无限延伸；线段有两个端点。'},
+      {q:'把一根木条固定在墙上至少需要两枚钉子，数学依据是？',options:['两点确定一条直线','两点之间线段最短','垂线段最短','对顶角相等'],a:0,
+       tip:'经过两点有且只有一条直线——"两点确定一条直线"是直线的基本事实。'},
+      {q:'从 A 地到 B 地，走直线小路最近，依据是？',options:['两点之间，线段最短','两点确定一条直线','三角形具有稳定性','两点对应连线相等'],a:0,
+       tip:'两点的所有连线中，线段最短，这条线段的长度叫两点间的距离。'},
+      {q:'线段 AB = 10 cm，M 是 AB 的中点，则 AM = ?',options:['5 cm','10 cm','20 cm','2.5 cm'],a:0,
+       tip:'中点把线段分成相等的两段：AM = MB = AB ÷ 2 = 5 cm。'},
+      {q:'1° 等于多少分（′）？',options:['60′','100′','30′','90′'],a:0,
+       tip:'角的单位是 60 进制：1° = 60′，1′ = 60″。'},
+      {q:'32.5° = ?',options:["32°30′","32°50′","32°5′","32°25′"],a:0,
+       tip:'0.5° = 0.5 × 60′ = 30′，所以 32.5° = 32°30′。'},
+      {q:'6 点整，钟面上时针与分针的夹角是？',options:['180°','90°','30°','60°'],a:0,
+       tip:'钟面一圈 360°，共 12 大格，每格 30°。6 点整时针分针相差 6 格，30° × 6 = 180°。'},
+      {q:'35° 的补角是？',options:['145°','55°','90°','125°'],a:0,
+       tip:'和为 180° 的两个角互为补角：180° − 35° = 145°。它的余角是 90° − 35° = 55°。'},
+      {q:'∠AOB = 80°，OC 平分 ∠AOB，则 ∠AOC = ?',options:['40°','80°','20°','160°'],a:0,
+       tip:'角平分线把角分成相等的两个角：∠AOC = ∠BOC = 80° ÷ 2 = 40°。'},
+      {q:'对顶角的性质是？',options:['对顶角相等','对顶角互补','对顶角互余','对顶角没有确定关系'],a:0,
+       tip:'两条直线相交形成的对顶角相等，这是常用来求角的性质。'},
+      {q:'圆柱的侧面展开图是？',options:['长方形','圆','扇形','三角形'],a:0,
+       tip:'圆柱侧面沿高剪开展平是长方形（一边是高，一边是底面圆周长）；圆锥侧面展开是扇形。'},
+      {q:'棱长为 a 的正方体，表面积是？',options:['6a²','a²','6a','4a²'],a:0,
+       tip:'正方体 6 个面都是边长 a 的正方形，每个面积 a²，表面积 6a²。'},
+      {q:'球的三视图（从正面、左面、上面看）都是？',options:['圆','正方形','三角形','长方形'],a:0,
+       tip:'球从任何方向看都是圆。正方体的三视图都是正方形。'},
+      {q:'观察规律：2, 4, 8, 16, 32, …，第 6 个数是？',options:['64','62','48','128'],a:0,
+       tip:'后一个数是前一个数的 2 倍：2→4→8→16→32→64。即 2 的幂：2⁶ = 64。'},
+    ]
+  },
+  {
+    id:'yingyu', name:'英语城堡', emoji:'🏰', tag:'英语', color:'#7c3aed',
+    mapBg:'linear-gradient(150deg,#8e6bd8,#5b2ea7)',
+    battleBg:'linear-gradient(180deg,#8d7bd8 0%,#c3b1f0 70%,#e8dffa 100%)',
+    desc:'字母骑士守卫的城堡，用语法咒语破敌！',
+    time:18,
+    monsters:[{emoji:'👻',name:'字母小鬼'},{emoji:'🦇',name:'单词蝙蝠'},{emoji:'🧟',name:'语法僵尸'},{emoji:'🐺',name:'阅读狼人'}],
+    boss:{emoji:'🧙',name:'语法大巫师'},
+    taunts:['Can you answer it?','Be careful!','Hahaha~'],
+    pool:[
+      {q:'— What\'s this?\n— It\'s ____ eraser.',options:['an','a','the','/'],a:0,
+       tip:'eraser 以元音音素 /eɪ/ 开头，不定冠词用 an。元音开头用 an，辅音开头用 a。'},
+      {q:'She ____ my English teacher.',options:['is','am','are','be'],a:0,
+       tip:'主语 she 是第三人称单数，be 动词用 is。口诀：我用 am，你用 are，is 用于他/她/它。'},
+      {q:'— How ____ you?\n— I\'m fine, thanks.',options:['are','is','am','be'],a:0,
+       tip:'"you"对应的 be 动词是 are：How are you? 你好吗？'},
+      {q:'Look! Those ____ my parents.',options:['are','is','am','be'],a:0,
+       tip:'those（那些）是复数，be 动词用 are。this/that 用 is，these/those 用 are。'},
+      {q:'This is Gina. ____ is my good friend.',options:['She','He','It','They'],a:0,
+       tip:'Gina 是女孩名字，用女性人称代词 She 指代。'},
+      {q:'— ____ is that boy?\n— He is my brother.',options:['Who','What','Where','How'],a:0,
+       tip:'问"那个男孩是谁"用 Who（谁）。What 问事物，Where 问地点，How 问方式/状况。'},
+      {q:'box 的复数形式是？',options:['boxes','boxs','box','boxies'],a:0,
+       tip:'以 s、x、ch、sh 结尾的可数名词，复数要加 es：box → boxes。'},
+      {q:'— ____ do you spell "book"?\n— B-O-O-K.',options:['How','What','Who','Where'],a:0,
+       tip:'"怎样拼写"用 How：How do you spell...? 是问拼写的固定句型。'},
+      {q:'在英文名 "Jim Green" 中，Green 是他的____。',options:['family name','first name','middle name','full name'],a:0,
+       tip:'英文名"名前姓后"：Jim 是名（first name/given name），Green 是姓（family name/last name）。'},
+      {q:'— Is this your pencil?\n— Yes, ____.',options:['it is','it isn\'t','he is','she is'],a:0,
+       tip:'Is this...? 的肯定回答是 Yes, it is. 否定回答是 No, it isn\'t.。'},
+      {q:'— ____ are you?\n— I\'m twelve.',options:['How old','How','What','Who'],a:0,
+       tip:'问年龄用 How old：How old are you? 你多大了？'},
+      {q:'I ____ from China.',options:['am','is','are','be'],a:0,
+       tip:'I（我）永远搭配 am：I am from China. 我来自中国。'},
+      {q:'What\'s this ____ English?',options:['in','on','at','of'],a:0,
+       tip:'"用英语说"用介词 in：in English。类似的还有 in Chinese（用汉语）。'},
+      {q:'— Thank you very much.\n— ____',options:['You\'re welcome.','I\'m OK.','Nice to meet you.','Good night.'],a:0,
+       tip:'别人道谢时回答 You\'re welcome.（不客气）。'},
+      {q:'He ____ (like) playing basketball.（用所给词的正确形式填空）',options:['likes','like','liking','to like'],a:0,
+       tip:'主语 He 是第三人称单数，一般现在时动词要加 s/es：likes。'},
+      {q:'— What color is the sky(天空)?\n— It\'s ____.',options:['blue','red','yellow','black'],a:0,
+       tip:'天空是蓝色的：blue 蓝色。red 红，yellow 黄，black 黑。'},
+      {q:'There ____ a book and two pens on the desk.',options:['is','are','am','be'],a:0,
+       tip:'There be 句型遵循"就近原则"，离 be 动词最近的是 a book（单数），所以用 is。'},
+      {q:'— Nice to meet you.\n— ____',options:['Nice to meet you, too.','Thank you.','I\'m fine.','Goodbye.'],a:0,
+       tip:'初次见面说 Nice to meet you.，回答要加 too：Nice to meet you, too.。'},
+      {q:'This ____ my sister and those ____ my brothers.',options:['is; are','are; is','is; is','are; are'],a:0,
+       tip:'sister 是单数用 is；brothers 是复数用 are。注意 and 前后主语并列时要分别判断。'},
+      {q:'— Good morning, Miss Li!\n— ____',options:['Good morning!','Good afternoon!','Good evening!','Good night!'],a:0,
+       tip:'问候要对应回答：Good morning. 回 Good morning.（早上好）。'},
+      {q:'— What\'s your name?\n— ____',options:['My name is Li Ming.','He is fine.','Yes, I am.','Nice to meet you.'],a:0,
+       tip:'问名字回答 My name is ... 或 I\'m ...。'},
+      {q:'— Is she your sister?\n— ____',options:['Yes, she is.','Yes, he is.','No, it is.','She is ten.'],a:0,
+       tip:'Is she...? 用 she 来回答：Yes, she is. / No, she isn\'t. 人称要保持一致。'},
+      {q:'— Are these your books?\n— Yes, ____.',options:['they are','these are','it is','I am'],a:0,
+       tip:'these（这些）提问时，回答要用 they 代替，不用 these。'},
+      {q:'— ____ is that woman?\n— She is my aunt.',options:['Who','What','Where','How'],a:0,
+       tip:'问"那个女人是谁"用 Who。aunt 是姑姑/阿姨。'},
+      {q:'— Where\'s my schoolbag?\n— It\'s ____ the table.',options:['under','of','at','to'],a:0,
+       tip:'under the table 在桌子下面。方位介词：in（里）、on（上）、under（下）。'},
+      {q:'My pencil box is ____ my schoolbag.',options:['in','on','at','of'],a:0,
+       tip:'文具盒在书包"里面"，用 in。'},
+      {q:'— Do you have a soccer ball?\n— ____',options:['Yes, I do.','Yes, I am.','No, I\'m not.','Yes, it is.'],a:0,
+       tip:'Do you...? 是一般疑问句，用 Yes, I do. / No, I don\'t. 回答。'},
+      {q:'He ____ a ping-pong ball.',options:["doesn't have","don't have","doesn't has","not have"],a:0,
+       tip:'主语 He 三单，否定用 doesn\'t + 动词原形 have。'},
+      {q:'— Does she like bananas?\n— ____',options:['Yes, she does.','Yes, she likes.','No, she isn\'t.','Yes, she do.'],a:0,
+       tip:'Does she...? 回答：Yes, she does. / No, she doesn\'t. Does 后动词用原形。'},
+      {q:'Bob ____ ice-cream very much.',options:['likes','like','liking','to like'],a:0,
+       tip:'主语 Bob 是第三人称单数，一般现在时动词加 s：likes。'},
+      {q:'下列哪个是不可数名词？',options:['bread','apple','banana','vegetable'],a:0,
+       tip:'bread（面包）不可数，没有复数形式。常见的不可数名词还有 milk、rice、water。'},
+      {q:'— What do you have ____ breakfast?\n— Eggs and milk.',options:['for','at','in','on'],a:0,
+       tip:'"三餐吃什么"用 have ... for breakfast/lunch/dinner。'},
+      {q:'— How much is the T-shirt?\n— It\'s seven ____.',options:['dollars','dollar',"dollar's","dollars'"],a:0,
+       tip:'seven 是复数，dollar 要加 s：seven dollars。How much 问价格。'},
+      {q:'— How much ____ these socks?\n— They\'re two dollars.',options:['are','is','am','be'],a:0,
+       tip:'socks 是复数，be 动词用 are；回答用 They\'re。'},
+      {q:'— Can I help you?\n— ____',options:['Yes, please. I need a sweater.','No, thanks you.','You\'re welcome.','I\'m fine.'],a:0,
+       tip:'购物场景：店员说 Can I help you? 顾客回答 Yes, please. I need/want ...'},
+      {q:'— When is your birthday?\n— It\'s ____ May 2nd.',options:['on','in','at','of'],a:0,
+       tip:'具体到某一天用 on：on May 2nd。只有月份用 in：in May。'},
+      {q:'My birthday is ____ August.',options:['in','on','at','for'],a:0,
+       tip:'月份前用 in：in August。年份也用 in：in 2026。'},
+      {q:'January is the ____ month of a year.',options:['first','one','second','third'],a:0,
+       tip:'一月是第一个月，要用序数词 first。序数词：first, second, third, fourth, fifth...'},
+      {q:'We have math ____ Monday.',options:['on','in','at','of'],a:0,
+       tip:'星期前用 on：on Monday。在上午/下午/晚上用 in the morning/afternoon/evening。'},
+      {q:'— What\'s your favorite subject?\n— ____',options:['My favorite subject is science.','Yes, I do.','It\'s a book.','She is fine.'],a:0,
+       tip:'favorite subject 问最喜欢的科目，直接回答科目名。'},
+      {q:'— ____ do you like P.E.?\n— Because it\'s fun.',options:['Why','What','Who','When'],a:0,
+       tip:'回答用 Because（因为），提问就要用 Why（为什么）。'},
+      {q:'— ____ is your math teacher?\n— Mrs. Wang.',options:['Who','What','Where','When'],a:0,
+       tip:'问"是谁"用 Who，回答是人名。'},
+      {q:'I watch TV ____ seven ____ the evening.',options:['at; in','in; at','on; in','at; on'],a:0,
+       tip:'具体时刻前用 at（at seven）；in the evening 在晚上。'},
+      {q:'He ____ (go) to school at 7:00 every day.（用所给词的正确形式填空）',options:['goes','go','going','to go'],a:0,
+       tip:'every day 表明是一般现在时，He 三单动词加 es：go → goes。'},
+      {q:'She ____ (watch) TV in the evening.（用所给词的正确形式填空）',options:['watches','watch','watchs','watching'],a:0,
+       tip:'watch 以 ch 结尾，三单加 es：watches。类似的还有 teach → teaches。'},
+      {q:'Tom ____ (study) English every day.（用所给词的正确形式填空）',options:['studies','studys','study','studing'],a:0,
+       tip:'辅音字母 + y 结尾的动词，三单变 y 为 i 加 es：study → studies。'},
+      {q:'she\'s 的完整形式是？',options:['she is','she his','she was','her is'],a:0,
+       tip:'she\'s = she is。类似的：he\'s = he is, it\'s = it is, I\'m = I am。'},
+      {q:'they\'re 的完整形式是？',options:['they are','there are','they is','their are'],a:0,
+       tip:'they\'re = they are（他们是）；不要与 their（他们的）、there（那里）混淆。'},
+      {q:'Please ask ____ (he) for help.（用所给词的正确形式填空）',options:['him','he','his','she'],a:0,
+       tip:'动词后要用人称代词宾格：ask him。he 是主格，his 是形容词性物主代词。'},
+      {q:'This is ____ ruler.（she）',options:['her','she','hers','him'],a:0,
+       tip:'名词前要用形容词性物主代词 her（她的）。she 是人称代词，hers 是名词性物主代词。'},
+      {q:'— ____ is your father?\n— He is fine.',options:['How','What','Who','Where'],a:0,
+       tip:'回答 fine（很好），问的是身体状况，用 How。'},
+      {q:'把朋友介绍给别人时，你应说：',options:['This is my friend, Gina.','That is a friend.','He friend is Gina.','I friend Gina.'],a:0,
+       tip:'介绍身边的人用 This is ...（这位是……）。'},
+      {q:'Please call me ____ 685-6034.',options:['at','in','on','of'],a:0,
+       tip:'"拨打某号码找某人"用 call sb. at + 电话号码。'},
+      {q:'— What\'s your phone number?\n— ____ 281-9176.',options:["It's","They're","I'm","He's"],a:0,
+       tip:'电话号码是一个东西，回答用 It\'s + 号码。'},
+      {q:'My father\'s brother is my ____.',options:['uncle','aunt','cousin','grandfather'],a:0,
+       tip:'父亲的兄弟是叔叔/伯伯（uncle）；uncle 也可指姑姑的丈夫。'},
+      {q:'My mother\'s sister is my ____.',options:['aunt','uncle','sister','grandmother'],a:0,
+       tip:'母亲的姐妹是姨妈/姑姑（aunt）。cousin 是堂（表）兄弟姐妹。'},
+      {q:'There is ____ "f" in the word "life".（提示：f 的发音）',options:['an','a','the','/'],a:0,
+       tip:'字母 f 的读音 /ef/ 以元音开头，所以用 an。字母 u /juː/ 辅音开头则用 a。'},
+      {q:'— Is your friend a boy ____ a girl?\n— A girl.',options:['or','and','but','so'],a:0,
+       tip:'选择疑问句用 or 连接两个选项，回答时选择其中之一，不用 Yes/No。'},
+      {q:'— Your English is very good.\n— ____',options:['Thank you.','No, I\'m not.','Yes, it is.','You\'re welcome.'],a:0,
+       tip:'受到表扬要礼貌地说 Thank you. 表示感谢。'},
+      {q:'— Let\'s play computer games.\n— ____ That sounds interesting.',options:['OK!','I am fine.','Yes, it is.','No, I don\'t.'],a:0,
+       tip:'Let\'s ... 提出建议，回答 OK! / That sounds good/fun. / Good idea!'},
+      {q:'— ____?\n— It\'s a map.',options:["What's this in English",'What color is it','Where is it','How are you'],a:0,
+       tip:'回答"是一张地图"，问"这个用英语说是什么"，用 What\'s this in English?'},
+      {q:'— What color ____ your shoes?\n— ____ black.',options:["are; They're","is; It's","are; It's","is; They're"],a:0,
+       tip:'shoes 是复数用 are；指复数名词用 They\'re。'},
+    ]
+  },
+  {
+    id:'daofa', name:'道法心桥', emoji:'💛', tag:'道法', color:'#e05a2b',
+    mapBg:'linear-gradient(150deg,#f8a978,#d95f2b)',
+    battleBg:'linear-gradient(180deg,#f7b267 0%,#f79d65 55%,#fce5cf 100%)',
+    desc:'成长路上的选择题，用智慧照亮心灵',
+    time:22,
+    monsters:[{emoji:'🌫️',name:'迷雾心魔'},{emoji:'😈',name:'谣言小妖'},{emoji:'🎭',name:'情绪小怪兽'},{emoji:'🌪️',name:'冲动风暴'}],
+    boss:{emoji:'⚖️',name:'法盲大魔王'},
+    taunts:['这样做对吗？','你确定吗？','人生的选择题！'],
+    pool:[
+      {q:'进入初中，面对新环境新同学，正确的做法是？',options:['主动调整心态，尽快适应新环境','一直怀念小学生活，拒绝改变','等别人先来认识自己','抱怨课程太多太难'],a:0,
+       tip:'初中是人生新阶段，主动适应、积极交往才能更快融入，收获成长。'},
+      {q:'关于"学习"，下列理解正确的是？',options:['学习不仅是在校读书，还包括观察、探究、实践等各种途径','学习只是学生的事情','只有读书考试才算学习','长大了就不用再学习'],a:0,
+       tip:'学习的表现多种多样：阅读、思考、实践都是学习，终身学习让人不断进步。'},
+      {q:'"工欲善其事，必先利其器"对我们的启示是？',options:['要学会学习，掌握科学的学习方法','要买最好的文具','只要努力就够了，方法不重要','学习只靠天赋'],a:0,
+       tip:'好的方法事半功倍：合理安排时间、课前预习、认真听讲、及时复习都是"利其器"。'},
+      {q:'"知之者不如好之者，好之者不如乐之者"启示我们？',options:['要培养学习兴趣，享受学习的快乐','只要喜欢就能学好','不喜欢的科目可以放弃','学习注定是痛苦的'],a:0,
+       tip:'兴趣是最好的老师，学会享受学习过程，才能学得更持久、更有效。'},
+      {q:'正确认识自己的途径有？',options:['自我观察、与他人比较、听取他人评价等','只听表扬自己的话','凡事和别人攀比','只看外表就够了'],a:0,
+       tip:'认识自己要全面：自我剖析 + 他人评价 + 社会比较，多角度才能看清自己。'},
+      {q:'"以人为镜，可以明得失"说明什么？',options:['他人的评价有助于我们认识自己','别人的话一定都是对的','要完全按别人的意见做事','自己最了解自己，不必听别人的'],a:0,
+       tip:'他人的评价像一面镜子，要用心听取、冷静分析：有则改之，无则加勉。'},
+      {q:'面对他人的批评与否定，正确的态度是？',options:['冷静反思，有则改之无则加勉','立刻反驳维护面子','从此不再理他','表面接受，内心记仇'],a:0,
+       tip:'批评可能是关心和提醒。屏蔽情绪看内容，批评中往往藏着进步的机会。'},
+      {q:'孔子说的"益者三友"是指？',options:['友直、友谅、友多闻','友强、友富、友贵','友美、友高、友壮','友玩、友闹、友闲'],a:0,
+       tip:'与正直、诚信、见识广博的人交友有益。择友要慎重，益友是人生的财富。'},
+      {q:'网上交友，正确的做法是？',options:['增强自我保护意识，不轻易透露个人信息','把家庭住址告诉聊得来的网友','网友约见面立刻就去','把账号密码告诉网上好友'],a:0,
+       tip:'虚拟世界真假难辨：不轻信、不透露隐私、不随意见面，学会理性辨别。'},
+      {q:'关于竞争与友谊，正确的认识是？',options:['竞争并不必然伤害友谊，关键是坦然接受并欣赏对方','竞争就必须不择手段','有竞争就不能做朋友','朋友之间不能有竞争'],a:0,
+       tip:'在竞争中坦然接受、互相欣赏、共同进步，友谊反而会更加深厚。'},
+      {q:'对待老师的批评，正确的认识是？',options:['批评意味着关心、提醒和劝诫，有助于我们反省进步','老师批评我就是针对我','被批评太丢人了','左耳进右耳出就好'],a:0,
+       tip:'老师的批评出发点是爱护。理解老师的良苦用心，有错就改。'},
+      {q:'面对不同风格的老师，正确的做法是？',options:['承认老师间的差异，尊重并适应不同教学风格','只喜欢幽默的老师','要求老师都按自己喜欢的方式讲课','不喜欢哪个老师就不学那科'],a:0,
+       tip:'每个老师都有自己的教学特点，接纳差异、主动适应，才是聪明的学习者。'},
+      {q:'孝亲敬长是中华民族传统美德。下列做法正确的是？',options:['倾听父母心声，主动分担家务','父母说话时低头玩手机','嫌父母唠叨就大吵一架','只在母亲节那天表现一下'],a:0,
+       tip:'孝敬父母体现在日常点滴：一声问候、一次倾听、力所能及的分担。'},
+      {q:'与父母发生冲突时，正确的解决方式是？',options:['冷静下来，通过良好的互动沟通解决问题','用冷战对抗','离家出走表示抗议','摔门砸东西发泄'],a:0,
+       tip:'亲子冲突大多源于缺乏沟通。换位思考、好好说话，爱需要表达也需要方法。'},
+      {q:'青春期身体发育因人而异，正确的态度是？',options:['正视身体变化，欣然接受，也不嘲弄他人','因为自己长得矮而自卑','嘲笑发育早的同学','盲目节食或乱吃增高药'],a:0,
+       tip:'青春期发育有早有晚，都是正常的成长节奏，悦纳自己也尊重他人。'},
+      {q:'面对青春期的矛盾心理，可以怎样调节？',options:['参加集体活动、向信任的人求助、写日记倾诉','压抑自己不告诉任何人','随意朝父母发脾气','假装这些烦恼不存在'],a:0,
+       tip:'青春期的矛盾心理正常，学会疏导：运动、倾诉、兴趣爱好都是好出口。'},
+      {q:'"行己有耻"要求我们？',options:['有知耻之心，树立底线意识，违反道德和法律的事坚决不做','知错犯错也无所谓','只要不被发现就可以做','耻辱感让人软弱，应当抛弃'],a:0,
+       tip:'有耻才能有所不为。底线意识是青春成长的护栏：凡人皆须有敬畏。'},
+      {q:'"止于至善"告诉我们？',options:['从点滴小事做起，日积月累，向更好的自己进发','目标远大就行，不必行动','人无完人，何必努力','只要超过别人就是至善'],a:0,
+       tip:'"勿以善小而不为"：修身从身边小事开始，积跬步才能至千里。'},
+      {q:'青春期情绪的特点是？',options:['反应强烈、波动性大，既有闭锁性又有表现性','一直平稳不变','只有快乐没有烦恼','只有成年人才有情绪波动'],a:0,
+       tip:'青春期情绪如疾风骤雨，来得快去得也快，这是正常的生理心理现象。'},
+      {q:'关于情绪的作用，正确的是？',options:['情绪会影响我们的观念和行动，需要恰当对待','情绪没有任何作用','负面情绪只能憋在心里','情绪完全由别人掌控'],a:0,
+       tip:'情绪是心灵的信号灯，既可能激励我们也可能伤害我们，要学会与情绪相处。'},
+      {q:'下列调节情绪的做法中，不正确的是？',options:['把气撒到同学身上','听音乐转移注意力','向朋友倾诉心声','深呼吸让自己放松'],a:0,
+       tip:'合理宣泄不等于随意发泄：迁怒他人既伤人也解决不了问题。注意审题选"不正确"。'},
+      {q:'情绪与情绪不同，情感相对情绪而言是？',options:['相对稳定、深刻持久的内心体验','和情绪完全相同','比情绪更短暂易变','只有成年人才有情感'],a:0,
+       tip:'情绪是短暂的、多变的（如愤怒、狂喜）；情感相对稳定深刻（如爱国、责任感）。'},
+      {q:'获得美好情感的途径有？',options:['阅读好书、参加有意义的活动、帮助他人','沉迷网络游戏','和同学攀比吃穿','整天刷短视频'],a:0,
+       tip:'美好情感在有益的活动中生成：艺术、运动、助人、创造，都能滋养心灵。'},
+      {q:'集体力量的来源是？',options:['成员共同的目标和团结协作','人数越多力量越大','有严格的纪律就够了','有一个好班长就够了'],a:0,
+       tip:'人心齐，泰山移。共同的目标 + 团结协作，集体的力量才大于个体之和。'},
+      {q:'个人与集体的关系是？',options:['集体的发展离不开个体的努力，个体的成长也离不开集体','集体和个人毫无关系','个人发展全靠自己，与集体无关','集体只会拖累个人发展'],a:0,
+       tip:'个人是集体的个人，集体是个人的集体：在集体中成长，也为集体添彩。'},
+      {q:'集体生活能带给我们？',options:['归属感、责任感，以及与人相处的能力','只有约束和烦恼','只是写作业的地方','对个人成长没有意义'],a:0,
+       tip:'集体是成长的沃土：学会承担责任、学会合作包容，都是课本外的必修课。'},
+      {q:'当班里的"小团体"利益与集体利益冲突时，应该？',options:['以集体利益为重，让小群体融入集体大目标','坚决维护小团体利益','两边都不得罪，装作看不见','退出班级活动'],a:0,
+       tip:'小群体利益服从集体利益，局部服从整体，集体才不会成为一盘散沙。'},
+      {q:'法律的最主要特征是？',options:['由国家制定或认可，靠国家强制力保证实施','由某一个人说了算','只约束坏人','只靠人们自觉遵守'],a:0,
+       tip:'法律由国家制定或认可，并靠军队、警察、法庭等国家强制力保证实施——这是法律区别于道德的最主要特征。'},
+      {q:'"法律面前人人平等"体现在？',options:['任何人不论职位高低，违法都必须承担相应责任','地位高的人可以免受法律约束','法律只管成年人','有钱就可以免受处罚'],a:0,
+       tip:'法律对全体社会成员具有普遍约束力，任何人都没有超越法律的特权。'},
+      {q:'"生活与法律息息相关"体现在？',options:['法律伴随我们一生，渗透到社会生活的方方面面','法律只和法官、律师有关','只有犯罪的人才与法律打交道','小孩子在法律面前不算数'],a:0,
+       tip:'从出生登记到上学、消费、工作，法律无处不在，它既规范我们也保护我们。'},
+      {q:'我国专门保护未成年人的法律有？',options:['《未成年人保护法》《预防未成年人犯罪法》','《民法典》《刑法》','《消费者权益保护法》','《劳动法》《公司法》'],a:0,
+       tip:'《未成年人保护法》和《预防未成年人犯罪法》是保护未成年人的专门法律。'},
+      {q:'《未成年人保护法》规定的保护包括？',options:['家庭保护、学校保护、社会保护、网络保护、政府保护、司法保护','只有学校保护','只有家庭保护','只有警察保护'],a:0,
+       tip:'六大保护为未成年人撑起"保护伞"，家庭是第一课堂，学校是重要阵地。'},
+      {q:'遭遇不法侵害时，正确的做法是？',options:['在保全自己的前提下寻求帮助，善于同违法犯罪作斗争','和歹徒硬拼到底','忍气吞声，不告诉任何人','事后找人报复回去'],a:0,
+       tip:'见义勇为更要见义"智"为：保全自己、记住特征、及时呼救报警，都是勇敢。'},
+      {q:'未成年人增强自我保护意识，下列做法正确的是？',options:['不轻信陌生人，外出时告知父母去向','网友约见面就爽快赴约','把家庭信息发到网上公开','接受陌生人的财物和邀请'],a:0,
+       tip:'警惕性是最好的护身符：不轻信、不透露、不独往，遇事及时求助。'},
+      {q:'"法令者，民之命也"说明法律是？',options:['关系千家万户的生活，是治国之重器','只是统治百姓的工具','与普通人生活无关','可有可无的东西'],a:0,
+       tip:'法律守护公平正义，与每个人的生活息息相关，法治是社会文明的重要标志。'},
+    ]
+  },
+  {
+    id:'lishi', name:'历史长河', emoji:'📜', tag:'历史', color:'#92600a',
+    mapBg:'linear-gradient(150deg,#c9a66b,#8b5a2b)',
+    battleBg:'linear-gradient(180deg,#d4a855 0%,#c0954a 60%,#ecd9b0 100%)',
+    desc:'从史前文明到宋元盛世，穿越千年',
+    time:22,
+    monsters:[{emoji:'🦴',name:'北京人头领'},{emoji:'🏺',name:'青铜古尊'},{emoji:'🐎',name:'草原铁骑'},{emoji:'🏯',name:'城池守将'}],
+    boss:{emoji:'👑',name:'帝国大主宰'},
+    taunts:['朝代顺序你知道吗？','这道题古人都知道！','以史为镜！'],
+    pool:[
+      {q:'我国境内目前已确认的最早古人类是？',options:['元谋人','北京人','山顶洞人','河姆渡人'],a:0,
+       tip:'元谋人距今约170万年，是我国境内目前已确认的最早古人类，发现于云南元谋县。'},
+      {q:'北京人已经学会使用？',options:['天然火','人工取火','电灯','煤炭'],a:0,
+       tip:'北京人使用天然火并会保存火种；山顶洞人已掌握人工取火。'},
+      {q:'生活在长江流域、种植水稻、住干栏式房屋的是？',options:['河姆渡人','半坡居民','北京人','山顶洞人'],a:0,
+       tip:'河姆渡人（长江流域）种水稻、住干栏式建筑；半坡居民（黄河流域）种粟、住半地穴式房屋。'},
+      {q:'半坡居民生活在黄河流域，他们种植的主要作物是？',options:['粟','水稻','玉米','花生'],a:0,
+       tip:'半坡居民种粟（小米），我国是世界上最早种植粟的国家。玉米是明代才传入美洲作物。'},
+      {q:'被尊崇为中华民族"人文初祖"的是？',options:['黄帝','蚩尤','大禹','纣王'],a:0,
+       tip:'炎黄两部落联合打败蚩尤后逐渐交融形成华夏族，后人尊炎帝、黄帝为人文始祖，黄帝被称"人文初祖"。'},
+      {q:'尧、舜、禹时期，民主推选部落联盟首领的制度是？',options:['禅让制','世袭制','分封制','郡县制'],a:0,
+       tip:'禅让制：将首领位子传给贤德之人。禹死后其子启继位，世袭制代替了禅让制。'},
+      {q:'我国历史上第一个奴隶制王朝是？',options:['夏朝','商朝','西周','秦朝'],a:0,
+       tip:'约公元前2070年，禹建立夏朝，这是我国第一个王朝，也标志着早期国家的产生。'},
+      {q:'商朝时刻在龟甲和兽骨上的古文字是？',options:['甲骨文','金文','小篆','隶书'],a:0,
+       tip:'甲骨文是一种比较成熟的文字，我国有文字可考的历史从商朝开始。'},
+      {q:'西周为稳定政治形势、巩固疆土，实行的制度是？',options:['分封制','郡县制','科举制','行省制'],a:0,
+       tip:'周王根据血缘关系和功劳大小分封宗亲和功臣，确立了社会等级秩序"天子—诸侯—卿大夫—士"。'},
+      {q:'春秋时期首先称霸中原的是？',options:['齐桓公','晋文公','楚庄王','越王勾践'],a:0,
+       tip:'齐桓公任用管仲为相，改革内政，以"尊王攘夷"为号召，成为春秋首霸。'},
+      {q:'"战国七雄"是指？',options:['齐、楚、秦、燕、赵、魏、韩','齐、鲁、燕、赵、魏、韩、秦','齐、晋、楚、燕、韩、赵、魏','秦、赵、魏、韩、齐、楚、吴'],a:0,
+       tip:'口诀"东南西北到中间"：齐（东）楚（南）秦（西）燕（北）赵魏韩（中间）。'},
+      {q:'商鞅变法的措施中，对后世地方行政制度影响深远的是？',options:['确立县制','奖励军功','允许土地买卖','统一度量衡'],a:0,
+       tip:'确立县制，由国君直接派官吏治理，为后来郡县制的形成奠定了基础。'},
+      {q:'战国时期主持修建都江堰的水利专家是？',options:['李冰','商鞅','管仲','西门豹'],a:0,
+       tip:'秦国蜀郡太守李冰父子主持修建都江堰，使成都平原成为"天府之国"，它集防洪、灌溉、水运于一体。'},
+      {q:'孔子思想的核心是？',options:['"仁"','"兼爱"','"法治"','"无为而治"'],a:0,
+       tip:'孔子是儒家学派创始人，核心思想"仁"（仁者爱人）；教育上创办私学、因材施教。'},
+      {q:'主张"兼爱""非攻"的学派是？',options:['墨家','儒家','道家','法家'],a:0,
+       tip:'墨家创始人墨子主张兼爱（无差别地爱一切人）、非攻（反对侵略战争）。'},
+      {q:'认为事物都有对立面、对立双方能相互转化的思想家是？',options:['老子','孔子','墨子','韩非'],a:0,
+       tip:'道家老子主张"无为而治"，认为一切事物都有对立面且能相互转化（朴素的辩证法思想）。'},
+      {q:'秦灭六国、统一全国是在？',options:['公元前221年','公元221年','公元前202年','公元前256年'],a:0,
+       tip:'公元前221年秦王嬴政建立秦朝，定都咸阳，建立起我国历史上第一个统一的多民族封建国家。'},
+      {q:'秦朝在地方上实行的制度是？',options:['郡县制','分封制','禅让制','世袭制'],a:0,
+       tip:'秦始皇废除分封制，推行郡县制，由中央直接管辖地方，开创了此后我国历代王朝地方行政的基本模式。'},
+      {q:'秦始皇统一全国后规定的全国规范文字是？',options:['小篆','隶书','楷书','甲骨文'],a:0,
+       tip:'统一文字为小篆，后流行隶书；统一货币为圆形方孔半两钱；还统一了度量衡。'},
+      {q:'中国历史上第一次大规模的农民起义是？',options:['陈胜、吴广起义','黄巾起义','李自成起义','太平天国运动'],a:0,
+       tip:'公元前209年大泽乡起义，提出"王侯将相宁有种乎"，秦朝的统治被推翻与此直接相关。'},
+      {q:'汉武帝接受谁的"罢黜百家，尊崇儒术"建议？',options:['董仲舒','主父偃','卫青','司马迁'],a:0,
+       tip:'汉武帝采纳董仲舒建议，把儒家学说立为正统思想，从此儒学居于主导地位。'},
+      {q:'为联络大月氏夹击匈奴，奉命出使西域的是？',options:['张骞','班超','苏武','甘英'],a:0,
+       tip:'张骞两次出使西域，沟通了西汉与西域的联系，为丝绸之路的开辟奠定了基础。'},
+      {q:'古代"丝绸之路"的起点是？',options:['长安','洛阳','成都','广州'],a:0,
+       tip:'丝绸之路从长安出发，经河西走廊、西域，通往中亚、西亚，最远到达欧洲（大秦）。'},
+      {q:'公元前60年，西汉设置西域都护，其最重要的意义是？',options:['标志着新疆地区正式归属中央政权','开辟了海上丝绸之路','彻底消灭了匈奴','统一了全国货币'],a:0,
+       tip:'西域都护的设置，标志着今新疆地区正式归属中央政权，新疆成为中国领土不可分割的一部分。'},
+      {q:'东汉时期总结前人经验、改进造纸工艺的是？',options:['蔡伦','张衡','华佗','王景'],a:0,
+       tip:'蔡伦改进造纸术（原料为树皮、麻头、破布等），纸逐渐取代简帛，便利了典籍的流传。'},
+      {q:'写成《伤寒杂病论》、被后世尊为"医圣"的是？',options:['张仲景','华佗','扁鹊','李时珍'],a:0,
+       tip:'东汉末年张仲景提出"治未病"理论，发展了中医学理论与治疗方法。'},
+      {q:'发明"麻沸散"、创编"五禽戏"的名医是？',options:['华佗','张仲景','扁鹊','孙思邈'],a:0,
+       tip:'华佗的麻沸散是世界麻醉剂的先驱；五禽戏模仿虎鹿熊猿鸟，是强身健体的体操。'},
+      {q:'我国古代第一部纪传体通史《史记》的作者是？',options:['司马迁','司马光','班固','陈寿'],a:0,
+       tip:'司马迁的《史记》记述了黄帝到汉武帝时期的史事，鲁迅赞其为"史家之绝唱，无韵之《离骚》"。'},
+      {q:'为三国鼎立局面形成奠定基础的著名战役是？',options:['赤壁之战','官渡之战','淝水之战','巨鹿之战'],a:0,
+       tip:'208年孙刘联军以少胜多败曹操于赤壁，为三国鼎立局面的形成奠定了基础。'},
+      {q:'三国之中，定都成都的是？',options:['蜀汉（刘备建立）','魏（曹丕建立）','吴（孙权建立）','西晋'],a:0,
+       tip:'220年曹丕定洛阳建魏；221年刘备定成都建蜀汉；229年孙权定建业（南京）建吴。'},
+      {q:'东晋南朝时期江南地区得以开发，最主要的原因是？',options:['北方人大量南迁，带去了劳动力和先进生产技术','江南人天然比北方人聪明','江南原本就比北方发达','战争刺激了经济发展'],a:0,
+       tip:'北民南迁带去劳动力与技术，加上江南自然条件优越、社会相对安定，江南得到开发，为经济重心南移奠定基础。'},
+      {q:'北魏孝文帝改革的历史作用是？',options:['促进了民族交融','加剧了南北对立','使鲜卑族从此消失','没有任何实际作用'],a:0,
+       tip:'孝文帝迁都洛阳、推行汉化措施（说汉语、穿汉服、改汉姓、通婚姻），促进民族交融，增强北魏实力。'},
+      {q:'我国现存最早、最完整的综合性农书是？',options:['《齐民要术》','《农政全书》','《天工开物》','《本草纲目》'],a:0,
+       tip:'北朝贾思勰的《齐民要术》总结了农、林、牧、副、渔方面的生产技术，强调遵循自然规律。'},
+      {q:'把圆周率精确到小数点后第七位的数学家是？',options:['祖冲之','刘徽','僧一行','郭守敬'],a:0,
+       tip:'南朝祖冲之运用"割圆术"，把圆周率精确到3.1415926—3.1415927之间，领先世界近千年。'},
+      {q:'东晋书法家，《兰亭集序》的作者、被誉为"书圣"的是？',options:['王羲之','颜真卿','柳公权','怀素'],a:0,
+       tip:'王羲之的字"飘若浮云，矫若惊龙"，《兰亭集序》被称为"天下第一行书"。'},
+      {q:'隋朝大运河以哪个城市为中心？',options:['洛阳','长安','涿郡','余杭'],a:0,
+       tip:'大运河以洛阳为中心，北达涿郡（今北京），南至余杭（今杭州），加强南北地区政治经济联系。'},
+      {q:'科举制正式确立的标志是？',options:['隋炀帝创立进士科','唐太宗增加考试科目','武则天创立殿试','汉武帝尊崇儒术'],a:0,
+       tip:'隋炀帝时进士科的创立，标志着科举制正式确立，此后选官注重才能学识。'},
+      {q:'唐太宗统治期间政治清明、经济复苏，史称？',options:['"贞观之治"','"开元盛世"','"文景之治"','"康乾盛世"'],a:0,
+       tip:'唐太宗李世民吸取隋亡教训，虚心纳谏（魏征）、轻徭薄赋，开创"贞观之治"。'},
+      {q:'中国历史上唯一的女皇帝是？',options:['武则天','慈禧太后','吕后','萧太后'],a:0,
+       tip:'武则天改国号为周，是我国历史上唯一的女皇帝，统治时期社会经济持续发展，为"开元盛世"奠定基础。'},
+      {q:'唐朝时发明的灌溉工具是？',options:['筒车','曲辕犁','耧车','翻车'],a:0,
+       tip:'筒车可随水流转动自动汲水灌溉；曲辕犁是耕地工具。二者都提高了农业生产效率。'},
+      {q:'唐太宗时入藏与松赞干布和亲的是？',options:['文成公主','王昭君','金城公主','太平公主'],a:0,
+       tip:'文成公主入藏带去谷物种子、工匠书籍，促进吐蕃经济文化发展，密切了汉藏友好关系。'},
+      {q:'唐朝六次东渡日本、传播佛法与唐文化的高僧是？',options:['鉴真','玄奘','法显','一行'],a:0,
+       tip:'鉴真东渡日本传授佛法，还传播医药、建筑等文化，为中日文化交流作出卓越贡献。'},
+      {q:'西行天竺取经、口述《大唐西域记》的是？',options:['玄奘','鉴真','班超','苏武'],a:0,
+       tip:'玄奘西行取佛经，为中国佛教发展作出重大贡献，《大唐西域记》是研究中外交流史的珍贵文献。'},
+      {q:'使唐朝由盛转衰的标志性事件是？',options:['安史之乱','黄巢起义','玄武门之变','甘露之变'],a:0,
+       tip:'755—763年安禄山、史思明发动叛乱，唐朝国势由盛转衰，逐渐形成藩镇割据局面。'},
+      {q:'北宋时期四川地区出现的世界上最早的纸币是？',options:['交子','会子','五铢钱','银票'],a:0,
+       tip:'商贸繁荣使金属货币不便携带，四川出现世界上最早的纸币"交子"，这是商业发展的重要标志。'},
+      {q:'北宋平民毕昇的重大发明是？',options:['活字印刷术','雕版印刷术','造纸术','指南针'],a:0,
+       tip:'毕昇发明泥活字印刷，比雕版印刷省时省力，是印刷术的重大变革（此技术后来传入朝鲜、日本等）。'},
+      {q:'宋代开始将指南针应用于？',options:['航海事业','农业生产','采矿冶炼','建筑工程'],a:0,
+       tip:'北宋末年指南针应用于航海，配合水密隔舱等技术，为远洋航行创造了条件，后经阿拉伯人传入欧洲。'},
+      {q:'描绘北宋东京汴河两岸繁华景象的名画《清明上河图》的作者是？',options:['张择端','王羲之','顾恺之','吴道子'],a:0,
+       tip:'张择端的《清明上河图》是北宋风俗画的代表作，是研究宋代社会生活的珍贵资料。'},
+      {q:'元朝设置的管理西藏地区的机构是？',options:['宣政院','西域都护府','驻藏大臣','理藩院'],a:0,
+       tip:'元朝设宣政院管辖西藏，西藏正式成为中央政府直接管辖的行政区域。'},
+      {q:'编年体通史《资治通鉴》"鉴于往事，有资于治道"，其作者是？',options:['司马光','司马迁','班固','欧阳修'],a:0,
+       tip:'北宋司马光主持编写的《资治通鉴》记述战国到五代的历史，与《史记》并称"史学双璧"。'},
+    ]
+  },
+  {
+    id:'shengwu', name:'生物秘境', emoji:'🌿', tag:'生物', color:'#2d6a4f',
+    mapBg:'linear-gradient(150deg,#52b788,#2d6a4f)',
+    battleBg:'linear-gradient(180deg,#74c69d 0%,#95d5b2 60%,#e2f5e8 100%)',
+    desc:'从细胞到生态系统，探索生命奥秘',
+    time:22,
+    monsters:[{emoji:'🦠',name:'病菌小怪'},{emoji:'🐛',name:'幼虫卫兵'},{emoji:'🥀',name:'凋零藤妖'},{emoji:'🦂',name:'毒素蝎王'}],
+    boss:{emoji:'🧬',name:'基因狂博士'},
+    taunts:['细胞里藏着什么？','显微镜你会用吗？','光合作用了解一下？'],
+    pool:[
+      {q:'下列属于生物的是？',options:['蘑菇','机器人','钟乳石','珊瑚石'],a:0,
+       tip:'蘑菇是真菌（能繁殖、需要营养），属于生物；机器人是人造物，钟乳石、珊瑚石是无生命物体。'},
+      {q:'下列属于生物共同特征的是？',options:['能生长和繁殖','都能自由运动','都能进行光合作用','都能用语言交流'],a:0,
+       tip:'生物的共同特征：需要营养、能呼吸、能排出废物、有应激性、能生长繁殖（病毒除外都有细胞结构）。'},
+      {q:'下列没有细胞结构的生物是？',options:['病毒','细菌','酵母菌','草履虫'],a:0,
+       tip:'病毒没有细胞结构，由蛋白质外壳和内部遗传物质组成，必须寄生在活细胞里。'},
+      {q:'显微镜的放大倍数等于？',options:['目镜倍数 × 物镜倍数','目镜倍数 + 物镜倍数','物镜倍数 × 2','随意组合'],a:0,
+       tip:'例如10×目镜配40×物镜，放大倍数是400倍。放大倍数越大，视野越暗、细胞越大、数目越少。'},
+      {q:'显微镜下观察到的物像是？',options:['倒像（上下左右颠倒的像）','正立的像','只有上下颠倒','只左右相反'],a:0,
+       tip:'显微镜成的是倒像，所以物像移动方向与装片移动方向一致相反推：物像往哪偏，装片就往哪移。'},
+      {q:'物像偏在视野的左上方，要移到视野中央，装片应向哪移动？',options:['左上方','右下方','左下方','右上方'],a:0,
+       tip:'物像在哪一侧，就把装片往同一侧移动（"物像偏哪，装片往哪推"）。'},
+      {q:'制作洋葱鳞片叶表皮细胞临时装片时，载玻片中央应先滴一滴？',options:['清水','生理盐水','碘液','酒精'],a:0,
+       tip:'植物细胞滴清水保持细胞形态；下面口腔上皮细胞要滴生理盐水，防止细胞吸水胀破。'},
+      {q:'制作人的口腔上皮细胞临时装片时，载玻片上应滴？',options:['生理盐水','清水','糖水','碘液'],a:0,
+       tip:'0.9%的生理盐水与人体细胞浓度相当，细胞才不会变形。'},
+      {q:'给临时装片染色时，常用的染液是？',options:['稀碘液','红墨水','蓝墨水','生理盐水'],a:0,
+       tip:'稀碘液能染细胞核，便于观察；一侧滴染液、另一侧用吸水纸吸引。'},
+      {q:'植物细胞有而动物细胞没有的结构是？',options:['细胞壁、液泡、叶绿体','细胞膜、细胞核','细胞质、线粒体','细胞核、细胞膜'],a:0,
+       tip:'细胞壁（保护支持）、液泡（含细胞液）、叶绿体（光合作用）是植物细胞特有的。'},
+      {q:'细胞的"控制中心"，内含遗传物质、控制生命活动的结构是？',options:['细胞核','细胞膜','液泡','细胞壁'],a:0,
+       tip:'细胞核内有染色体（DNA+蛋白质），是遗传信息库，控制细胞的代谢和遗传。'},
+      {q:'呼吸作用的主要场所、被称为细胞"动力车间"的是？',options:['线粒体','叶绿体','液泡','核糖体'],a:0,
+       tip:'线粒体把有机物分解释放能量（呼吸作用场所）；叶绿体是光合作用场所，被比作"养料制造车间"。'},
+      {q:'"种瓜得瓜，种豆得豆"，控制这种遗传现象的物质主要存在于？',options:['细胞核','细胞膜','细胞壁','液泡'],a:0,
+       tip:'细胞核中的DNA携带遗传信息，决定了生物的遗传特征。'},
+      {q:'细胞分裂时，最先进行复制并平均分配到两个子细胞中去的是？',options:['染色体','细胞壁','液泡','叶绿体'],a:0,
+       tip:'分裂时染色体先复制再均分，保证两个新细胞的遗传物质相同。'},
+      {q:'由形态相似、结构功能相同的细胞联合形成的细胞群叫？',options:['组织','器官','系统','个体'],a:0,
+       tip:'细胞分化形成组织→不同组织构成器官→（动物再构成系统）→个体。'},
+      {q:'下列不属于人体四大基本组织的是？',options:['保护组织','上皮组织','肌肉组织','神经组织'],a:0,
+       tip:'人体四大组织：上皮、结缔、肌肉、神经组织；保护组织、输导组织是植物的组织。'},
+      {q:'与植物相比，人体的结构层次中多出的一层是？',options:['系统','种群','群落','生态系统'],a:0,
+       tip:'人体：细胞→组织→器官→系统→人体；植物没有"系统"这一层次。'},
+      {q:'绿色开花植物的六大器官中，属于生殖器官的是？',options:['花、果实、种子','根、茎、叶','根、花、果实','茎、种子、叶'],a:0,
+       tip:'根、茎、叶是营养器官；花、果实、种子与繁殖后代有关，是生殖器官。'},
+      {q:'菜豆种子（双子叶植物）储存营养物质的结构是？',options:['子叶','胚乳','种皮','胚芽'],a:0,
+       tip:'菜豆种子无胚乳，两片肥厚的子叶储存营养；玉米种子（单子叶）的营养储存在胚乳里。'},
+      {q:'玉米种子中储存营养物质的主要结构是？',options:['胚乳','子叶','种皮','胚轴'],a:0,
+       tip:'玉米是单子叶植物，胚乳储存营养（滴碘液变蓝的就是胚乳）；一片子叶转运营养。'},
+      {q:'种子萌发必需的环境条件是？',options:['适宜的温度、一定的水分和充足的空气','充足的阳光、肥料和土壤','阳光、水分和空气','只要水分就够了'],a:0,
+       tip:'种子萌发不需要阳光！必需：适宜温度+一定水分+充足空气；自身条件：胚完整且有活力。'},
+      {q:'根吸收水分和无机盐的主要部位是根尖的？',options:['成熟区','伸长区','分生区','根冠'],a:0,
+       tip:'成熟区生有大量根毛，吸收面积大，是吸收的主要部位；伸长区是生长最快的部位。'},
+      {q:'植物生活中需要量最多的无机盐是含哪种元素的无机盐？',options:['氮、磷、钾','钙、铁、锌','碳、氢、氧','铜、硼、钼'],a:0,
+       tip:'氮促进枝叶繁茂（叶）、磷促进花果发育（花果）、钾使茎秆健壮（茎），需要量最多。'},
+      {q:'导管的功能是？',options:['运输水和无机盐（方向：自下而上）','运输有机物','进行光合作用','储存营养物质'],a:0,
+       tip:'导管位于木质部，把根吸收的水和无机盐向上运输到茎叶。'},
+      {q:'筛管运输的物质和方向是？',options:['有机物（养料），由叶向根等其他器官运输','水和无机盐，由根向叶运输','氧气，全身运输','二氧化碳，运到叶片'],a:0,
+       tip:'筛管位于韧皮部，把叶光合作用制造的有机物运送到根、果实等器官。'},
+      {q:'植物进行蒸腾作用时，水分散失的"门户"是？',options:['气孔','表皮','叶脉','叶绿体'],a:0,
+       tip:'气孔由一对保卫细胞控制开闭，是水蒸气外出和气体交换的门户。'},
+      {q:'控制气孔开放和关闭的细胞是？',options:['保卫细胞','表皮细胞','叶肉细胞','导管细胞'],a:0,
+       tip:'保卫细胞吸水膨胀时气孔张开，失水收缩时气孔关闭，像两扇自动门。'},
+      {q:'下列不属于蒸腾作用意义的是？',options:['为植物制造有机物','拉动水分和无机盐向上运输','降低叶片表面温度','提高空气湿度、增加降雨'],a:0,
+       tip:'制造有机物是光合作用的功能。蒸腾作用主要是运输动力+降温+调节气候，注意审题。'},
+      {q:'绿色植物进行光合作用的场所是？',options:['叶绿体','线粒体','细胞核','液泡'],a:0,
+       tip:'叶绿体含叶绿素，能吸收光能，把光能转变为化学能储存在有机物中。'},
+      {q:'光合作用的原料是？',options:['二氧化碳和水','有机物和氧气','阳光和土壤','淀粉和蛋白质'],a:0,
+       tip:'光合作用：二氧化碳+水 →（光能、叶绿体）→ 有机物（储存能量）+ 氧气。'},
+      {q:'光合作用的实质是？',options:['合成有机物，储存能量','分解有机物，释放能量','吸收氧气，呼出二氧化碳','蒸腾水分，降温散热'],a:0,
+       tip:'光合作用把简单的无机物合成有机物，把光能转变为化学能储存在有机物中——"制造+储存"。'},
+      {q:'植物的呼吸作用发生在？',options:['所有活细胞中（主要在线粒体）','只有叶片中','只在白天进行','只有根中进行'],a:0,
+       tip:'呼吸作用昼夜不停、有光无光都能进行，所有活细胞都进行呼吸作用。'},
+      {q:'呼吸作用的实质是？',options:['分解有机物，释放能量','合成有机物，储存能量','吸收二氧化碳，释放氧气','吸收水分，运输无机盐'],a:0,
+       tip:'呼吸作用：有机物+氧 → 二氧化碳+水+能量，释放的能量用于生命活动（如生长、运动、吸水）。'},
+      {q:'要提高大棚蔬菜的产量，可以采取的措施是？',options:['适当增加大棚内二氧化碳浓度','夜间适当升高大棚温度','延长黑暗时间','减少浇水和施肥'],a:0,
+       tip:'二氧化碳是光合作用原料，适量"气肥"能增产；夜间适当降温可减弱呼吸作用减少消耗。'},
+      {q:'人体消化和吸收营养物质的主要场所是？',options:['小肠','胃','大肠','口腔'],a:0,
+       tip:'小肠长5-6米、内壁有环形皱襞和小肠绒毛，增大吸收面积，是消化吸收的主战场。'},
+      {q:'淀粉的化学性消化开始于？',options:['口腔（唾液分解淀粉）','胃','小肠','大肠'],a:0,
+       tip:'淀粉从口腔开始被唾液淀粉酶分解为麦芽糖；蛋白质始于胃；脂肪始于小肠。'},
+      {q:'人体与外界进行气体交换的主要场所是？',options:['肺（肺泡）','气管','鼻腔','咽部'],a:0,
+       tip:'肺泡数量多、壁薄、外包毛细血管，适于气体交换：氧进入血液，二氧化碳排出。'},
+      {q:'血液中运输氧气的血细胞是？',options:['红细胞','白细胞','血小板','淋巴细胞'],a:0,
+       tip:'红细胞含血红蛋白（含铁），运输氧；白细胞吞噬病菌防御疾病；血小板止血凝血。'},
+      {q:'能吞噬病菌、对人体起防御和保护功能的血细胞是？',options:['白细胞','红细胞','血小板','血浆'],a:0,
+       tip:'白细胞能变形穿过血管壁吞噬病菌，发炎化脓处白细胞增多。'},
+      {q:'具有止血和加速凝血作用的血细胞是？',options:['血小板','红细胞','白细胞','血浆'],a:0,
+       tip:'血小板体积最小，能在伤口处聚集释放物质促进凝血、封堵伤口。'},
+      {q:'泌尿系统中形成尿液的器官是？',options:['肾脏','膀胱','输尿管','尿道'],a:0,
+       tip:'肾脏是形成尿液的器官（肾单位是基本结构），输尿管输送、膀胱储尿、尿道排尿。'},
+      {q:'神经系统结构和功能的基本单位是？',options:['神经元（神经细胞）','大脑','脊髓','神经纤维'],a:0,
+       tip:'神经元包括细胞体和突起，接受刺激、产生并传导兴奋。'},
+      {q:'完成反射的神经结构基础（反射弧）的正确顺序是？',options:['感受器→传入神经→神经中枢→传出神经→效应器','效应器→传出神经→神经中枢→传入神经→感受器','神经中枢→感受器→传入神经→效应器→传出神经','传入神经→感受器→神经中枢→效应器→传出神经'],a:0,
+       tip:'反射弧五环节缺一不可，例如缩手反射：手皮肤（感受器）→传入神经→脊髓（中枢）→传出神经→手部肌肉（效应器）。'},
+      {q:'青春期身体发育最突出的特点是？',options:['身高体重迅速增长，性器官发育并出现第二性征','饭量明显变大','脾气变得暴躁','视力快速下降'],a:0,
+       tip:'青春期是一生中身体发育和智力发展的黄金期，突出特点是身高体重突增和性发育成熟。'},
+    ]
+  },
+  {
+    id:'dili', name:'地理远征', emoji:'🌍', tag:'地理', color:'#0369a1',
+    mapBg:'linear-gradient(150deg,#38bdf8,#0369a1)',
+    battleBg:'linear-gradient(180deg,#7dd3fc 0%,#a5defc 60%,#e0f5ff 100%)',
+    desc:'经纬为网，山川为路，环游世界',
+    time:22,
+    monsters:[{emoji:'🌀',name:'龙卷风怪'},{emoji:'🌋',name:'火山喷发兽'},{emoji:'🧭',name:'迷路罗盘灵'},{emoji:'🏔️',name:'高原雪怪'}],
+    boss:{emoji:'🗺️',name:'地心大魔王'},
+    taunts:['你会看地图吗？','经纬网困住了多少人！','东西半球怎么分？'],
+    pool:[
+      {q:'首次完成环球航行、用事实证明大地是球体的船队是由谁率领的？',options:['麦哲伦','哥伦布','郑和','迪亚士'],a:0,
+       tip:'1519—1522年麦哲伦船队环球航行成功，证明了地球是球体；哥伦布发现新大陆并未环航。'},
+      {q:'地球的平均半径约为？',options:['6371千米','4万千米','5.1亿平方千米','1000千米'],a:0,
+       tip:'地球平均半径6371千米，赤道周长约4万千米，表面积约5.1亿平方千米。'},
+      {q:'纬线指示什么方向？',options:['东西方向','南北方向','东北—西南','没有方向'],a:0,
+       tip:'纬线是圆圈，指示东西；经线是半圆，指示南北。两条线互相垂直交织成经纬网。'},
+      {q:'经线指示什么方向？',options:['南北方向','东西方向','上下弯曲','沿赤道环绕'],a:0,
+       tip:'所有经线都连接南北两极，指示南北方向；经线长度都相等。'},
+      {q:'南北半球的分界线是？',options:['赤道（0°纬线）','本初子午线','北回归线','南回归线'],a:0,
+       tip:'赤道以北是北半球、以南是南半球；本初子午线（0°经线）是东西经的分界，不是南北半球分界！'},
+      {q:'东西半球的分界线是？',options:['20°W和160°E组成的经线圈','0°和180°经线','赤道','20°E和160°W'],a:0,
+       tip:'为了避免把欧洲、非洲切分到两个半球，东西半球以20°W—160°E为界（小小"过门"记忆：20W-160E）。'},
+      {q:'纬度30°—60°之间的地区属于？',options:['中纬度地区','低纬度地区','高纬度地区','极地地区'],a:0,
+       tip:'0°—30°低纬、30°—60°中纬、60°—90°高纬。'},
+      {q:'地球自转的方向和周期是？',options:['自西向东，约24小时','自东向西，一年','自西向东，一年','自北向南，24小时'],a:0,
+       tip:'自转：绕地轴、自西向东、一天，产生昼夜交替和时间差异；注意"北逆南顺"看方向。'},
+      {q:'下列现象由地球自转产生的是？',options:['昼夜交替和时间差异','四季变化','昼夜长短的变化','五带划分'],a:0,
+       tip:'自转→昼夜交替、时差；公转→四季更替、昼夜长短变化、五带划分。'},
+      {q:'下列现象由地球公转产生的是？',options:['四季变化和昼夜长短变化','昼夜交替','太阳东升西落','时间差异'],a:0,
+       tip:'地球斜着身子绕太阳公转（一年），导致阳光直射点移动，形成四季和昼夜长短变化。'},
+      {q:'五带的划分界线是？',options:['南北回归线和南北极圈','赤道和本初子午线','20°W和160°E','30°纬线和60°纬线'],a:0,
+       tip:'回归线是热带与温带的分界，极圈是温带与寒带的分界，共五带：热、南北温、南北寒。'},
+      {q:'太阳直射点移动的范围是？',options:['南、北回归线之间','南、北极圈之间','赤道附近','全球任何地方'],a:0,
+       tip:'太阳直射点在23.5°N—23.5°S之间往返移动，所以热带一年有两次直射，温带寒带没有直射。'},
+      {q:'地图的三要素是指？',options:['比例尺、方向、图例','颜色、大小、形状','经线、纬线、赤道','标题、边框、图名'],a:0,
+       tip:'比例尺=图上距离÷实地距离；图例是地图的"语言"；方向可用指向标、经纬网判定。'},
+      {q:'图幅大小相同时，比例尺越大，则表示的范围和内容？',options:['范围越小，内容越详细','范围越大，内容越简略','范围越小，内容越简略','范围越大，内容越详细'],a:0,
+       tip:'大比例尺地图（如校园平面图）范围小、内容详；小比例尺地图（如世界地图）范围大、内容略。'},
+      {q:'等高线地形图上，等高线密集的地方表示？',options:['坡陡','坡缓','盆地','平原'],a:0,
+       tip:'等高线密集→坡陡；稀疏→坡缓。同图幅中"密陡疏缓"是判读坡度的口诀。'},
+      {q:'等高线重叠的地方表示的地形是？',options:['悬崖（陡崖）','山脊','山顶','鞍部'],a:0,
+       tip:'等高线重叠说明崖壁近于垂直。两山顶之间是鞍部，等高线向低处凸出是山脊、向高处凸出是山谷。'},
+      {q:'等高线由高处向低处凸出的地形部位叫？',options:['山脊','山谷','陡崖','盆地'],a:0,
+       tip:'"凸高为谷，凸低为脊"：等高线向海拔低处凸出是山脊（分水岭），向高处凸出是山谷（集水线）。'},
+      {q:'河流一般发育、流经哪种地形部位？',options:['山谷','山脊','山顶','陡崖'],a:0,
+       tip:'山谷地势两侧高中间低，易集水发育河流；山脊是分水岭，一般无河流。'},
+      {q:'地球表面海陆面积的比例约为？',options:['七分海洋，三分陆地','各占一半','三分海洋，七分陆地','八分海洋，两分陆地'],a:0,
+       tip:'海洋约占71%，陆地约占29%，所以地球被称为"蓝色星球"，陆地主要分布在北半球。'},
+      {q:'七大洲中面积最大和最小的分别是？',options:['亚洲、大洋洲','非洲、欧洲','亚洲、欧洲','北美洲、南极洲'],a:0,
+       tip:'面积由大到小口诀"亚非北南美，南极欧大洋"：亚洲最大，大洋洲最小。'},
+      {q:'四大洋中面积最大的是？',options:['太平洋','大西洋','印度洋','北冰洋'],a:0,
+       tip:'太平洋最大最深；大西洋呈"S"形；印度洋大部分在热带；北冰洋最小、跨经度最多。'},
+      {q:'亚洲和非洲之间的分界线是？',options:['苏伊士运河','巴拿马运河','白令海峡','直布罗陀海峡'],a:0,
+       tip:'苏伊士运河沟通地中海与红海，是亚非分界线；巴拿马运河是南北美洲分界线。'},
+      {q:'南美洲和北美洲的分界线是？',options:['巴拿马运河','苏伊士运河','麦哲伦海峡','白令海峡'],a:0,
+       tip:'巴拿马运河沟通太平洋和大西洋，大大缩短了美洲东西海岸的航程。'},
+      {q:'下列不属于亚洲与欧洲分界线的是？',options:['苏伊士运河','乌拉尔山脉','土耳其海峡','大高加索山脉'],a:0,
+       tip:'亚欧分界：乌拉尔山—乌拉尔河—里海—大高加索山—黑海—土耳其海峡。苏伊士运河是亚非分界！注意审题。'},
+      {q:'世界最大的岛屿是？',options:['格陵兰岛','台湾岛','马达加斯加岛','冰岛'],a:0,
+       tip:'格陵兰岛面积约216万平方千米，是世界第一大岛；面积小于澳大利亚大陆，所以是"岛"不是"洲"。'},
+      {q:'板块构造学说认为，全球岩石圈分为？',options:['六大板块','四大板块','八大板块','十六大板块'],a:0,
+       tip:'六大板块：亚欧、非洲、美洲、印度洋、太平洋、南极洲板块，板块内部较稳定。'},
+      {q:'一般来说，板块与板块交界的地带？',options:['地壳比较活跃，多火山地震','地壳最稳定','没有任何地质活动','地势都很平坦'],a:0,
+       tip:'世界两大火山地震带：环太平洋火山地震带和地中海—喜马拉雅地带，都位于板块交界处。'},
+      {q:'喜马拉雅山脉是由哪两大板块碰撞挤压形成的？',options:['亚欧板块和印度洋板块','太平洋板块和美洲板块','非洲板块和亚欧板块','南极洲板块和美洲板块'],a:0,
+       tip:'印度洋板块俯冲到亚欧板块之下，挤压抬升形成喜马拉雅山，且仍在缓慢升高。'},
+      {q:'下列描述天气的是？',options:['今天晴转多云，气温18℃','昆明四季如春','热带全年炎热','地中海沿岸冬季多雨'],a:0,
+       tip:'天气是短时间内的大气状况（多变）；气候是多年平均的大气状况（稳定）。"四季如春"是气候。'},
+      {q:'一天中，气温最高的时刻一般出现在？',options:['午后2时左右','正午12时','日出前后','午夜12点'],a:0,
+       tip:'大气受热需要过程：正午太阳辐射最强，但气温最高值滞后到14时左右；最低值在日出前后。'},
+      {q:'北半球陆地上，一年中月平均气温最高值出现在？',options:['7月','1月','8月','2月'],a:0,
+       tip:'北半球陆地最热月7月、最冷月1月；海洋升降温慢，滞后一个月（8月最热、2月最冷）。'},
+      {q:'影响气候的主要因素不包括？',options:['时间早晚','纬度位置','海陆位置','地形地势'],a:0,
+       tip:'纬度影响气温（正午太阳高度）、海陆影响降水（沿海湿润）、地形影响气温降水（垂直变化）。注意审题选"不包括"。'},
+      {q:'山地对降水的影响是？',options:['迎风坡降水多，背风坡降水少','迎风坡降水少，背风坡降水多','两侧降水完全相同','山顶最少、山脚最多'],a:0,
+       tip:'湿润气流被迫抬升→迎风坡多地形雨；翻过山后下沉增温→背风坡干燥少雨。'},
+      {q:'气温随海拔升高而？',options:['降低，每升高100米约降0.6℃','升高，每100米约升0.6℃','保持不变','先升后降'],a:0,
+       tip:'"高处不胜寒"：海拔越高气温越低，这就是山顶积雪、避暑山地凉爽的原因。'},
+      {q:'赤道地区的降水特点是？',options:['全年高温多雨','全年干旱少雨','只有冬季降水','终年炎热干燥'],a:0,
+       tip:'赤道地区终年受热，气流上升，多对流雨；回归线大陆西岸和内陆则干旱（撒哈拉沙漠）。'},
+      {q:'亚洲东部和东南部主要分布的人种是？',options:['黄色人种','白色人种','黑色人种','混血人种'],a:0,
+       tip:'三大人种：黄色（亚洲东部东南部）、白色（欧洲、北美、大洋洲、非洲北部等）、黑色（非洲中部南部）。'},
+      {q:'世界上信徒人数最多的宗教是？',options:['基督教','伊斯兰教','佛教','印度教'],a:0,
+       tip:'基督教信徒最多；伊斯兰教徒被称为穆斯林；佛教是世界第三大宗教，创始于古印度。'},
+      {q:'日本多火山、地震的原因是？',options:['位于环太平洋板块交界地带','国土面积太小','人口密度太大','受海洋性气候影响'],a:0,
+       tip:'日本地处亚欧板块与太平洋板块交界处（环太平洋火山地震带），地壳活跃，富士山就是活火山。'},
+      {q:'被称为日本"海上生命线"的是？',options:['马六甲海峡','台湾海峡','白令海峡','霍尔木兹海峡'],a:0,
+       tip:'日本从中东波斯湾进口的石油几乎都经过马六甲海峡，它是连接印度洋与太平洋的咽喉要道。'},
+      {q:'世界上面积最大的国家是？',options:['俄罗斯','加拿大','中国','美国'],a:0,
+       tip:'俄罗斯约1700万平方千米，地跨亚欧两洲和东西半球，欧洲部分是它的政治经济中心。'},
+      {q:'南极地区的代表性动物是？',options:['企鹅','北极熊','骆驼','袋鼠'],a:0,
+       tip:'南极是冰雪高原，代表动物企鹅；北极代表动物北极熊。南极还储藏着丰富的固体淡水（冰川）。'},
+      {q:'北极地区的代表性动物是？',options:['北极熊','企鹅','大象','鸵鸟'],a:0,
+       tip:'北极熊被称为"北冰洋之王"；注意企鹅在南极、北极熊在北极，别弄混。'},
+      {q:'中东地区最丰富、对世界影响最大的矿产资源是？',options:['石油','煤炭','金刚石','稀土'],a:0,
+       tip:'中东石油储量约占世界一半以上，主要分布在波斯湾沿岸，通过海路运往东亚、欧洲和美洲。'},
+    ]
+  }
+];
+
+const FINAL = {
+  id:'final', name:'期末大决战', emoji:'🏫', tag:'全能', color:'#f59e0b', time:24,
+  battleBg:'linear-gradient(180deg,#3a4a6b 0%,#7b6ca8 60%,#f5c97b 100%)',
+  boss:{emoji:'📝',name:'考卷大魔王'},
+  pool:[]
+};
+WORLDS.forEach(w => {
+  w.pool.forEach(q => { q._tag = w.tag; q._tagColor = w.color; });
+  FINAL.pool = FINAL.pool.concat(w.pool);
+});
+
+const HITS = [4, 4, 5, 5];        // 每个普通关卡答对多少题击败怪物
+const FINAL_HITS = 7;             // 最终BOSS
+const WRONG_DMG = 25, BOSS_WRONG_DMG = 30;
+
+/* ================= 存档 ================= */
+const SAVE_KEY = 'grade7_quest_v1';
+let save = { rec:{}, totalScore:0, muted:false, used:{} };
+try{
+  const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+  if(s) save = Object.assign(save, s);
+}catch(e){}
+Sfx.muted = !!save.muted;
+function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
+
+/* ================= 屏幕切换 ================= */
+function show(id){
+  $$('.screen').forEach(x => x.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+/* ================= 地图 ================= */
+function levelUnlocked(wi, li){
+  if(li === 0) return true;
+  return !!save.rec[wi + '-' + (li - 1)];
+}
+function finalUnlocked(){
+  return WORLDS.every((w, wi) => !!save.rec[wi + '-4']);
+}
+function renderMap(){
+  const wrap = $('#worlds');
+  wrap.innerHTML = '';
+  let totalStars = 0, totalLevels = 0;
+  WORLDS.forEach((w, wi) => {
+    const sec = document.createElement('div');
+    sec.className = 'world';
+    sec.style.background = w.mapBg;
+    let cleared = 0;
+    for(let li = 0; li < 5; li++){
+      const st = save.rec[wi + '-' + li];
+      if(st){ cleared++; totalStars += st; }
+    }
+    totalLevels += 5;
+    let head = '<div class="world-head"><span class="w-emoji">' + w.emoji + '</span><h3>' + w.name + '</h3><span class="w-prog">' + cleared + ' / 5</span></div>';
+    head += '<div class="world-desc">' + w.desc + ' · 每题限时 ' + w.time + ' 秒</div>';
+    sec.innerHTML = head;
+    const row = document.createElement('div');
+    row.className = 'levels';
+    for(let li = 0; li < 5; li++){
+      const isBoss = li === 4;
+      const unlocked = levelUnlocked(wi, li);
+      const mon = isBoss ? w.boss : w.monsters[li];
+      const stars = save.rec[wi + '-' + li] || 0;
+      const node = document.createElement('div');
+      node.className = 'lv' + (isBoss ? ' boss' : '') + (unlocked ? '' : ' locked');
+      let starTxt = '';
+      if(stars > 0) starTxt = '⭐'.repeat(stars);
+      else if(!unlocked) starTxt = '';
+      node.innerHTML = '<span class="m">' + (unlocked ? mon.emoji : '🔒') + '</span><span class="n">' + (isBoss ? 'BOSS' : '第' + (li + 1) + '关') + '</span><span class="stars">' + starTxt + '</span>';
+      if(unlocked){
+        node.addEventListener('click', () => { Sfx.click(); startBattle(wi, li); });
+      }
+      row.appendChild(node);
+    }
+    sec.appendChild(row);
+    wrap.appendChild(sec);
+  });
+  // 最终BOSS
+  const fw = $('#final-wrap');
+  const unlocked = finalUnlocked();
+  const done = !!save.finalDone;
+  const node = document.createElement('div');
+  node.className = 'lv final-boss' + (unlocked ? '' : ' locked');
+  node.style.background = 'linear-gradient(135deg,#fff3e0,#ffcc80)';
+  node.innerHTML = '<span class="m" style="font-size:34px">' + (unlocked ? '📝' : '🔒') + '</span><div class="fb-txt"><b>期末大决战 · 考卷大魔王</b><span>' +
+    (done ? '👑 已征服！你是真正的学霸！' : unlocked ? '所有世界 BOSS 已全部击败，决战开始！' : '需击败各世界的全部 BOSS 后解锁（剩 ' + WORLDS.filter((w, wi) => !save.rec[wi + '-4']).length + ' 个）') +
+    '</span></div>';
+  if(unlocked){
+    node.addEventListener('click', () => { Sfx.click(); startBattle(WORLDS.length, 0); });
+  }
+  fw.innerHTML = '';
+  fw.appendChild(node);
+  $('#map-stats').textContent = '⭐ ' + totalStars + ' / ' + (totalLevels * 3) + '　💰 累计得分 ' + save.totalScore;
+  updateMuteBtn();
+}
+
+/* ================= 战斗 ================= */
+let B = null;
+
+function startBattle(wi, li){
+  const isFinal = wi === WORLDS.length;
+  const world = isFinal ? FINAL : WORLDS[wi];
+  const isBoss = !isFinal && li === 4;
+  const monster = isFinal ? FINAL.boss : (isBoss ? world.boss : world.monsters[li]);
+  B = {
+    wi, li, isFinal, isBoss, world, monster,
+    heroHP: 100, monHP: 100,
+    need: isFinal ? FINAL_HITS : HITS[li],
+    wrongDmg: (isBoss || isFinal) ? BOSS_WRONG_DMG : WRONG_DMG,
+    time: world.time,
+    combo: 0, maxCombo: 0, correct: 0, wrong: 0, score: 0,
+    answered: false, over: false,
+    q: null, order: null, correctPos: 0,
+    timer: null, timeLeft: 0
+  };
+  $('#battle-screen').style.background = world.battleBg;
+  $('#battle-title').textContent = isFinal ? '🏫 期末大决战' : world.name + ' · ' + (isBoss ? 'BOSS 关' : '第 ' + (li + 1) + ' 关');
+  $('#mon-sprite').textContent = monster.emoji;
+  $('#mon-name').textContent = monster.name;
+  $('#mon-sprite').className = 'sprite';
+  $('#hero-sprite').className = 'sprite';
+  $('#hero-sprite').id = 'hero-sprite';
+  document.getElementById('hero-sprite').textContent = '🧑‍🎓';
+  $('#explain').classList.remove('show');
+  $('#combo-badge').className = '';
+  $('#kbd-hint').textContent = 'ontouchstart' in window ? '' : '电脑上可按 1-4 或 A-D 键选择答案';
+  updateHUD();
+  show('#battle-screen');
+  nextQuestion();
+}
+
+/* 抽题：优先出「使用次数最少」的题，避免重复；同场次内答过的题优先级自动降低 */
+function drawQ(){
+  const pool = B.world.pool;
+  let min = Infinity;
+  pool.forEach(q => { const n = save.used[q.q] || 0; if(n < min) min = n; });
+  let cands = pool.filter(q => (save.used[q.q] || 0) === min);
+  if(cands.length > 14) cands = shuffle(cands).slice(0, 14);
+  const pick = cands[Math.floor(Math.random() * cands.length)];
+  save.used[pick.q] = (save.used[pick.q] || 0) + 1;
+  return pick;
+}
+
+function nextQuestion(){
+  if(!B || B.over) return;
+  B.q = drawQ();
+  B.order = shuffle([0, 1, 2, 3]);
+  B.correctPos = B.order.indexOf(B.q.a);
+  B.answered = false;
+  const n = B.correct + B.wrong + 1;
+  $('#q-num').textContent = '第 ' + n + ' 题';
+  const tag = B.q._tag || B.world.tag;
+  const tagColor = B.q._tagColor || B.world.color;
+  $('#q-tag').textContent = tag;
+  $('#q-tag').style.background = tagColor;
+  $('#q-text').textContent = B.q.q;
+  const box = $('#options');
+  box.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+  B.order.forEach((oi, pos) => {
+    const btn = document.createElement('button');
+    btn.innerHTML = '<b>' + letters[pos] + '</b><span>' + B.q.options[oi] + '</span>';
+    btn.addEventListener('click', () => answer(pos));
+    box.appendChild(btn);
+  });
+  // 怪物挑衅
+  if(Math.random() < 0.4){
+    const bub = $('#mon-bubble');
+    bub.textContent = rnd(B.world.taunts || ['哼！']);
+    bub.classList.add('show');
+    setTimeout(() => bub.classList.remove('show'), 1300);
+  }
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(B.timer);
+  B.timeLeft = B.time;
+  updateTimerBar();
+  B.timer = setInterval(() => {
+    B.timeLeft -= 0.1;
+    if(B.timeLeft <= 0){
+      B.timeLeft = 0;
+      updateTimerBar();
+      clearInterval(B.timer);
+      answer(-1);
+    }else{
+      updateTimerBar();
+    }
+  }, 100);
+}
+function updateTimerBar(){
+  const pct = Math.max(0, B.timeLeft / B.time * 100);
+  const bar = $('#timer-bar');
+  bar.style.width = pct + '%';
+  bar.className = pct < 30 ? 'warn' : '';
+}
+
+function floatOn(el, text, cls){
+  const s = document.createElement('div');
+  s.className = 'float ' + cls;
+  s.textContent = text;
+  el.appendChild(s);
+  setTimeout(() => s.remove(), 1000);
+}
+
+let toastTimer = null;
+function toast(text){
+  const t = $('#toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1400);
+}
+
+function updateHUD(){
+  const hb = $('#hero-bar'), mb = $('#mon-bar');
+  const hp = Math.max(0, B.heroHP), mp = Math.max(0, B.monHP);
+  hb.style.width = hp + '%';
+  mb.style.width = mp + '%';
+  hb.className = hp < 35 ? 'low' : hp < 65 ? 'mid' : '';
+  mb.className = mp < 35 ? 'low' : mp < 65 ? 'mid' : '';
+  $('#hero-hp-num').textContent = Math.round(hp);
+  $('#mon-hp-num').textContent = Math.round(mp);
+  $('#score-chip').textContent = '💰 ' + B.score;
+  const cb = $('#combo-badge');
+  if(B.combo >= 2){
+    cb.textContent = '🔥 连击 x' + B.combo;
+    cb.classList.add('show');
+  }else{
+    cb.classList.remove('show');
+  }
+}
+
+function answer(pos){
+  if(!B || B.answered || B.over) return;
+  B.answered = true;
+  clearInterval(B.timer);
+  const q = B.q;
+  const btns = $$('#options button');
+  btns.forEach(b => b.disabled = true);
+  btns[B.correctPos].classList.add('right');
+  if(pos >= 0 && pos !== B.correctPos) btns[pos].classList.add('wrong');
+
+  if(pos === B.correctPos){
+    /* ---- 答对：英雄攻击 ---- */
+    B.correct++;
+    B.combo++;
+    B.maxCombo = Math.max(B.maxCombo, B.combo);
+    let dmg = 100 / B.need;
+    const fast = B.timeLeft >= B.time / 2;
+    if(fast) dmg += 5;
+    const shown = Math.min(Math.round(dmg), Math.ceil(B.monHP));
+    B.monHP -= dmg;
+    const gain = 100 + Math.round(B.timeLeft * 4) + (B.combo - 1) * 15;
+    B.score += gain;
+    Sfx.correct();
+    const hero = $('#hero-sprite'), mon = $('#mon-sprite');
+    hero.classList.add('lunge');
+    setTimeout(() => {
+      Sfx.slash();
+      mon.classList.add('hurt');
+      floatOn(mon, '-' + shown, 'dmg');
+      setTimeout(() => mon.classList.remove('hurt'), 460);
+      hero.classList.remove('lunge');
+    }, 220);
+    if(B.combo > 0 && B.combo % 3 === 0 && B.heroHP < 100){
+      const h = Math.min(12, 100 - B.heroHP);
+      B.heroHP += h;
+      Sfx.heal();
+      setTimeout(() => floatOn($('#hero-sprite'), '+' + h, 'heal'), 500);
+    }
+    toast('✅ 正确！' + (fast ? '⚡疾速打击 ' : '') + '-' + shown);
+    updateHUD();
+    setTimeout(() => {
+      if(B.monHP <= 0) winBattle();
+      else nextQuestion();
+    }, 950);
+  }else{
+    /* ---- 答错/超时：怪物攻击 ---- */
+    B.wrong++;
+    B.combo = 0;
+    B.heroHP -= B.wrongDmg;
+    Sfx.wrong();
+    const mon = $('#mon-sprite'), hero = $('#hero-sprite');
+    mon.classList.add('lungeM');
+    setTimeout(() => {
+      hero.classList.add('hurt');
+      hero.id = 'hero-sprite';
+      floatOn(hero, '-' + B.wrongDmg, 'dmg');
+      setTimeout(() => hero.classList.remove('hurt'), 460);
+      mon.classList.remove('lungeM');
+    }, 220);
+    updateHUD();
+    const head = pos === -1 ? '⏰ 时间到！被怪物偷袭了！' : '❌ 答错啦，被怪物反击了！';
+    showExplain(q, head);
+  }
+}
+
+function showExplain(q, head){
+  $('#exp-head').textContent = head;
+  const letters = ['A', 'B', 'C', 'D'];
+  $('#exp-ans').textContent = letters[B.correctPos] + '．' + q.options[q.a];
+  $('#exp-tip').textContent = q.tip || '复习一下课本，下次一定能答对！';
+  $('#exp-btn').textContent = B.heroHP <= 0 ? '查看结果 💪' : '继续战斗 ▶';
+  $('#explain').classList.add('show');
+}
+
+$('#exp-btn').addEventListener('click', () => {
+  Sfx.click();
+  $('#explain').classList.remove('show');
+  if(!B) return;
+  if(B.heroHP <= 0){ loseBattle(); }
+  else{ nextQuestion(); }
+});
+
+/* ================= 胜负 ================= */
+function winBattle(){
+  if(B.over) return;
+  B.over = true;
+  clearInterval(B.timer);
+  Sfx.win();
+  const hpPct = B.heroHP / 100;
+  const stars = hpPct >= 0.7 ? 3 : hpPct >= 0.35 ? 2 : 1;
+  B.score += Math.round(B.heroHP * 2);
+  if(B.isFinal){
+    save.finalDone = true;
+  }else{
+    const k = B.wi + '-' + B.li;
+    save.rec[k] = Math.max(save.rec[k] || 0, stars);
+  }
+  save.totalScore += B.score;
+  persist();
+  setTimeout(() => showResult(true, stars), 500);
+}
+
+function loseBattle(){
+  if(B.over) return;
+  B.over = true;
+  clearInterval(B.timer);
+  Sfx.lose();
+  setTimeout(() => showResult(false, 0), 300);
+}
+
+function nextLevelOf(wi, li){
+  if(wi === WORLDS.length) return null;
+  if(li < 4) return [wi, li + 1];
+  if(wi < WORLDS.length - 1) return [wi + 1, 0];
+  return finalUnlocked() ? [WORLDS.length, 0] : null;
+}
+
+function showResult(win, stars){
+  const R = {
+    emoji: win ? (stars === 3 ? '🏆' : '💪') : '🥊',
+    title: win ? (stars === 3 ? '完美通关！学霸本霸！' : stars === 2 ? '干得漂亮，继续冲！' : '惊险通关，再接再厉！')
+                : '别灰心！学霸都是从错题里爬出来的！',
+  };
+  $('#res-emoji').textContent = R.emoji;
+  $('#res-title').textContent = R.title;
+  $('#res-stars').textContent = win ? '⭐'.repeat(stars) + '☆'.repeat(3 - stars) : '';
+  $('#res-score').textContent = B.score;
+  $('#res-acc').textContent = B.correct + ' / ' + (B.correct + B.wrong);
+  $('#res-combo').textContent = 'x' + B.maxCombo;
+  $('#res-hp').textContent = Math.max(0, Math.round(B.heroHP)) + ' / 100';
+  const nl = win ? nextLevelOf(B.wi, B.li) : null;
+  const btnNext = $('#btn-next');
+  if(nl){
+    btnNext.style.display = '';
+    btnNext.textContent = nl[0] === WORLDS.length ? '🏫 挑战期末大决战' : (nl[1] === 4 ? '挑战下一关 BOSS ➡️' : '➡️ 下一关');
+  }else{
+    btnNext.style.display = 'none';
+  }
+  btnNext.onclick = () => { Sfx.click(); startBattle(nl[0], nl[1]); };
+  $('#btn-retry').onclick = () => { Sfx.click(); startBattle(B.wi, B.li); };
+  $('#btn-map').onclick = () => { Sfx.click(); renderMap(); show('#map-screen'); };
+  show('#result-screen');
+  if(win) confetti();
+}
+
+function confetti(){
+  const card = $('#result-card');
+  const ems = ['🎉', '⭐', '🎊', '✨'];
+  for(let i = 0; i < 22; i++){
+    const s = document.createElement('span');
+    s.className = 'confetti';
+    s.textContent = rnd(ems);
+    s.style.left = Math.random() * 100 + '%';
+    s.style.animationDuration = (1.6 + Math.random() * 1.4) + 's';
+    s.style.animationDelay = (Math.random() * .6) + 's';
+    s.style.fontSize = (14 + Math.random() * 14) + 'px';
+    card.appendChild(s);
+    setTimeout(() => s.remove(), 3600);
+  }
+}
+
+/* ================= 顶部按钮 / 键盘 ================= */
+$('#quit-btn').addEventListener('click', () => {
+  if(B && !B.over && !confirm('确定要逃跑吗？本关进度将丢失！')) return;
+  Sfx.click();
+  if(B) clearInterval(B.timer);
+  renderMap();
+  show('#map-screen');
+});
+$('#btn-start').addEventListener('click', () => { Sfx.click(); renderMap(); show('#map-screen'); });
+$('#btn-back-home').addEventListener('click', () => { Sfx.click(); updateHome(); show('#home-screen'); });
+$('#btn-reset').addEventListener('click', () => {
+  if(!confirm('确定清空全部闯关进度和得分吗？')) return;
+  save = { rec:{}, totalScore:0, muted:save.muted, used:{} };
+  persist();
+  Sfx.click();
+  renderMap();
+});
+$('#btn-help').addEventListener('click', () => { Sfx.click(); $('#help-modal').classList.add('show'); });
+$('#btn-help-close').addEventListener('click', () => { Sfx.click(); $('#help-modal').classList.remove('show'); });
+$('#help-modal').addEventListener('click', e => { if(e.target.id === 'help-modal') $('#help-modal').classList.remove('show'); });
+
+function updateMuteBtn(){
+  $('#btn-mute').textContent = Sfx.muted ? '🔇 音效：关' : '🔊 音效：开';
+}
+$('#btn-mute').addEventListener('click', () => {
+  save.muted = !save.muted;
+  Sfx.muted = save.muted;
+  persist();
+  updateMuteBtn();
+  Sfx.click();
+});
+
+function updateHome(){
+  $('#home-score').textContent = save.totalScore > 0 ? '💰 累计得分：' + save.totalScore : '';
+}
+
+document.addEventListener('keydown', e => {
+  if(!$('#battle-screen').classList.contains('active')) return;
+  if($('#explain').classList.contains('show')){
+    if(e.key === 'Enter') $('#exp-btn').click();
+    return;
+  }
+  const k = e.key.toLowerCase();
+  const map = {'1':0, '2':1, '3':2, '4':3, a:0, b:1, c:2, d:3};
+  if(k in map){
+    const btns = $$('#options button');
+    const idx = map[k];
+    if(btns[idx] && !btns[idx].disabled) btns[idx].click();
+  }
+});
+
+updateMuteBtn();
+updateHome();
+</script>
+</body>
+</html>

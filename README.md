@@ -15,6 +15,8 @@ push 到 main 后 GitHub Actions 自动构建发布：
 - `index.html` — 题库练习页（题库内嵌，含练习/错题模式）
 - `answers.md` — 答案速查表（按域分组，含修正标注）
 - `game/` — BRICKFALL 打砖块街机游戏（详见 [`game/README.md`](game/README.md)）
+- `gem-journey/` — 宝石奇旅消除游戏
+- `grade7/` — 学霸大冒险 · 初一全科答题闯关游戏
 
 ## 🎮 BRICKFALL 打砖块
 
@@ -23,6 +25,12 @@ push 到 main 后 GitHub Actions 自动构建发布：
 👉 **在线游玩：https://wooluo.github.io/k/game/game.html**
 
 故事模式 20 关 + 2 Boss、无尽/限时/挑战等 6 种模式、11 种砖块、16 种道具、成就与存档，支持鼠标/键盘/触控。本地运行：直接用浏览器打开 `game/game.html`。
+
+## 🎓 学霸大冒险 · 初一全科闯关
+
+RPG 答题打怪 H5 游戏：答对攻击怪物、答错看解析回血复盘。覆盖初一 **7 科**（语文 / 数学 / 英语 / 道法 / 历史 / 生物 / 地理），共 **357 题**，35 关 + 期末大决战；连击回血、疾速打击、星级评价，进度自动存档，手机电脑都能玩。
+
+👉 **在线游玩：https://wooluo.github.io/k/grade7/**
 
 ## 修正说明
 
