@@ -495,13 +495,13 @@ function updEMissiles(dt){
 
 /* ================= BOSS ================= */
 function spawnBoss(){
-  boss={x:VW/2,y:-280,hp:2000,maxHp:2000,state:'enter',t:0,atkT:3,ringT:5,beamT:6,planeT:5,volT:5,flash:0,beams:[],swayPh:rand(0,TAU)};
+  boss={x:VW/2,y:-280,hp:2000,maxHp:2000,state:'enter',t:0,atkT:3,ringT:5,beamT:6,planeT:5,volT:5,hitT:0,beams:[],swayPh:rand(0,TAU)};
   SND.alarm();
 }
 function bossPhase(){return boss.hp>boss.maxHp*0.7?1:boss.hp>boss.maxHp*0.4?2:3;}
 function updBoss(dt){
   if(!boss)return;
-  boss.t+=dt;boss.flash=Math.max(0,boss.flash-dt);
+  boss.t+=dt;boss.hitT=Math.max(0,boss.hitT-dt);
   const ph=boss.state==='fight'?bossPhase():1;
   if(boss.state==='enter'){
     boss.y+=((150-boss.y)*1.4+30)*dt;
@@ -509,20 +509,35 @@ function updBoss(dt){
     return;
   }
   if(boss.state==='dying'){
-    if(Math.random()<dt*9){
-      const ex=boss.x+rand(-140,140),ey=boss.y+rand(-50,55);
-      explode(ex,ey,16,Math.random()<0.3);SND.boom();
+    // 持续殉爆 + 浓烟 + 震屏, 船体逐渐烧黑
+    G.shake=Math.min(13,G.shake+dt*18);
+    if(Math.random()<dt*14){
+      const ex=boss.x+rand(-150,150),ey=boss.y+rand(-55,55);
+      explode(ex,ey,rand(12,22),Math.random()<0.35);SND.boom();
     }
-    if(boss.t>2.2){
-      explode(boss.x,boss.y,60,true);SND.bigboom();G.flash=0.6;
+    if(Math.random()<dt*22){
+      parts.push({x:boss.x+rand(-130,130),y:boss.y+rand(-50,50),vx:rand(-12,12),vy:rand(-35,-10),
+        life:rand(0.7,1.3),max:1.3,size:rand(6,13),c:['#39404e','#4a5262','#5c6472'][(Math.random()*3)|0],type:'sq'});
+    }
+    if(boss.t>2.3){
+      // 终结连环大爆炸
+      const bx=boss.x,by=boss.y;
+      explode(bx,by,90,true);SND.bigboom();
+      G.flash=0.8;G.shake=18;
+      for(let k=1;k<=5;k++){
+        setTimeout(()=>{
+          explode(bx+rand(-130,130),by+rand(-45,50),45,true);
+          SND.bigboom();G.shake=Math.max(G.shake,10);G.flash=Math.max(G.flash,0.25);
+        },k*170);
+      }
       const bonus=15000+G.level*3000;G.score+=bonus;
-      dropPickup(boss.x-60,boss.y,'P');dropPickup(boss.x,boss.y,'H');dropPickup(boss.x+60,boss.y,'B');
+      dropPickup(bx-60,by,'P');dropPickup(bx,by,'H');dropPickup(bx+60,by,'B');
       boss=null;
       G.phase='clear';G.phaseT=0;
       player.hp=Math.min(player.maxHp,player.hp+1);
       items.bomb.stock=Math.min(9,items.bomb.stock+1);
       toast('第 '+G.level+' 关 通关! 奖励 +1❤ +1炸弹');
-      SND.heart();
+      setTimeout(()=>SND.heart(),900);
     }
     return;
   }
@@ -582,7 +597,7 @@ function updBoss(dt){
 }
 function hitBoss(dmg){
   if(!boss||boss.state==='dying')return;
-  boss.hp-=dmg;boss.flash=0.08;
+  boss.hp-=dmg;boss.hitT=0.12;
   if(boss.hp<=0){
     boss.hp=0;boss.state='dying';boss.t=0;
     eBullets.length=0;eMissiles.length=0;boss.beams.length=0;
@@ -1038,28 +1053,30 @@ function drawHoming(h){
 }
 function drawBoss(){
   if(!boss)return;
-  const b=boss,fl=b.flash>0;
+  const b=boss;
+  // 受击震动(替代白闪)
+  const jx=b.hitT>0?rand(-2.5,2.5):0, jy=b.hitT>0?rand(-2,2):0;
   // 扫射激光柱(绝对坐标,画在船体后面)
   for(const bm of b.beams){
-    const bx=b.x+bm.dx;
+    const bx=b.x+bm.dx+jx;
     if(bm.warn>0){
       if(Math.floor(G.t*12)%2){
         ctx.strokeStyle='rgba(255,90,90,0.6)';ctx.lineWidth=3;
-        ctx.beginPath();ctx.moveTo(bx,b.y+55);ctx.lineTo(bx,VH);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(bx,b.y+55+jy);ctx.lineTo(bx,VH);ctx.stroke();
       }
     }else{
       ctx.save();ctx.globalCompositeOperation='lighter';
-      ctx.fillStyle='rgba(255,60,110,0.35)';ctx.fillRect(bx-19,b.y+55,38,VH-b.y-55);
-      ctx.fillStyle='rgba(255,170,200,0.85)';ctx.fillRect(bx-8,b.y+55,16,VH-b.y-55);
-      ctx.fillStyle='#fff';ctx.fillRect(bx-3,b.y+55,6,VH-b.y-55);
+      ctx.fillStyle='rgba(255,60,110,0.35)';ctx.fillRect(bx-19,b.y+55+jy,38,VH-b.y-55);
+      ctx.fillStyle='rgba(255,170,200,0.85)';ctx.fillRect(bx-8,b.y+55+jy,16,VH-b.y-55);
+      ctx.fillStyle='#fff';ctx.fillRect(bx-3,b.y+55+jy,6,VH-b.y-55);
       ctx.restore();
     }
   }
-  ctx.save();ctx.translate(b.x,b.y);
+  ctx.save();ctx.translate(b.x+jx,b.y+jy);
   // 主体
   const ph=bossPhase();
-  const hull=fl?'#fff':(ph===1?'#3e4a63':ph===2?'#4a3e63':'#5c3550');
-  const hull2=fl?'#fff':(ph===1?'#2e3850':ph===2?'#382e50':'#48283e');
+  const hull=ph===1?'#3e4a63':ph===2?'#4a3e63':'#5c3550';
+  const hull2=ph===1?'#2e3850':ph===2?'#382e50':'#48283e';
   ctx.fillStyle=hull2;
   ctx.beginPath();
   ctx.moveTo(-150,-40);ctx.lineTo(150,-40);ctx.lineTo(150,30);ctx.lineTo(90,58);
@@ -1073,9 +1090,9 @@ function drawBoss(){
   ctx.beginPath();ctx.moveTo(-140,-8);ctx.lineTo(140,-8);ctx.stroke();
   // 两侧炮舱
   for(const s of [-1,1]){
-    ctx.fillStyle=fl?'#fff':'#31394d';
+    ctx.fillStyle='#31394d';
     ctx.fillRect(s*90-26,20,52,36);
-    ctx.fillStyle=fl?'#fff':'#454f68';
+    ctx.fillStyle='#454f68';
     ctx.fillRect(s*90-18,48,36,12);
     const a=angTo(b.x+s*90,b.y+55,player.x,player.y);
     ctx.strokeStyle='#20242e';ctx.lineWidth=6;
@@ -1083,7 +1100,7 @@ function drawBoss(){
   }
   // 核心穹顶
   const pulse=0.6+0.4*Math.sin(G.t*(ph===3?10:5));
-  ctx.fillStyle=fl?'#fff':'#22283a';
+  ctx.fillStyle='#22283a';
   ctx.beginPath();ctx.arc(0,18,26,0,TAU);ctx.fill();
   ctx.fillStyle=ph===1?'rgba(255,90,120,'+pulse+')':ph===2?'rgba(255,140,80,'+pulse+')':'rgba(255,60,60,'+pulse+')';
   ctx.beginPath();ctx.arc(0,18,17,0,TAU);ctx.fill();
@@ -1092,6 +1109,16 @@ function drawBoss(){
   // 警灯
   ctx.fillStyle=(Math.floor(G.t*6)%2)?'#ff5a5a':'#5a1a1a';
   ctx.fillRect(-8,-55,6,4);ctx.fillRect(4,-55,6,4);
+  // 濒死燃烧变黑
+  if(b.state==='dying'){
+    const burn=clamp(b.t/2.3*0.55,0,0.55);
+    ctx.fillStyle='rgba(8,5,14,'+burn+')';
+    ctx.beginPath();
+    ctx.moveTo(-150,-40);ctx.lineTo(150,-40);ctx.lineTo(150,30);ctx.lineTo(90,58);
+    ctx.lineTo(-90,58);ctx.lineTo(-150,30);ctx.closePath();ctx.fill();
+    ctx.fillRect(-120,-55,240,30);
+    ctx.fillRect(-116,20,52,36);ctx.fillRect(64,20,52,36);
+  }
   ctx.restore();
   if(b.state==='enter'){
     txtC('WARNING',VW/2,VH*0.4,30,(Math.floor(G.t*6)%2)?'#ff3355':'#7a1020','center');
