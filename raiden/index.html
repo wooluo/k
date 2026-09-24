@@ -34,7 +34,7 @@ canvas{display:block;touch-action:none;cursor:crosshair;background:#0a1a12;}
 (function(){
 'use strict';
 /* ================= 基础 ================= */
-const VW=480, VH=800, TAU=Math.PI*2, SCROLLV=85;
+const VW=480; let VH=800; const TAU=Math.PI*2, SCROLLV=85;
 const FONT='"Press Start 2P","PingFang SC","Microsoft YaHei",monospace';
 const canvas=document.getElementById('game');
 const ctx=canvas.getContext('2d');
@@ -49,6 +49,7 @@ function pad(n,l){return (''+n).padStart(l,'0');}
 
 function resize(){
   const w=window.innerWidth,h=window.innerHeight;
+  VH=Math.round(clamp(VW*h/Math.max(1,w),800,1240)); // 超长屏(20:9+)动态拉高画布铺满全屏，普通/横屏仍480×800
   const s=Math.min(w/VW,h/VH);
   const cw=Math.max(1,Math.floor(VW*s)),ch=Math.max(1,Math.floor(VH*s));
   canvas.style.width=cw+'px';canvas.style.height=ch+'px';
