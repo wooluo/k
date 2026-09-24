@@ -495,10 +495,10 @@ function updEMissiles(dt){
 
 /* ================= BOSS ================= */
 function spawnBoss(){
-  boss={x:VW/2,y:-280,hp:200,maxHp:200,state:'enter',t:0,atkT:3,ringT:5,beamT:6,planeT:5,volT:5,flash:0,beams:[],swayPh:rand(0,TAU)};
+  boss={x:VW/2,y:-280,hp:2000,maxHp:2000,state:'enter',t:0,atkT:3,ringT:5,beamT:6,planeT:5,volT:5,flash:0,beams:[],swayPh:rand(0,TAU)};
   SND.alarm();
 }
-function bossPhase(){return boss.hp>140?1:boss.hp>80?2:3;}
+function bossPhase(){return boss.hp>boss.maxHp*0.7?1:boss.hp>boss.maxHp*0.4?2:3;}
 function updBoss(dt){
   if(!boss)return;
   boss.t+=dt;boss.flash=Math.max(0,boss.flash-dt);
@@ -1205,7 +1205,7 @@ function drawHUD(){
     ctx.strokeStyle='#ff8fa3';ctx.lineWidth=1;ctx.strokeRect(x,y,w,h);
     for(let k=1;k<20;k++){ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(x+w*k/20,y,1,h);}
     drawHeart(x-12,y+7,13,'#ff2e4d');
-    txtC('BOSS '+Math.ceil(boss.hp)+'/200',x+w/2,y+h+11,8,'#ff8fa3','center');
+    txtC('BOSS '+Math.ceil(boss.hp)+'/2000',x+w/2,y+h+11,8,'#ff8fa3','center');
   }
   // 道具按钮
   for(const b of BTNS){
@@ -1366,7 +1366,7 @@ function drawTitle(){
     ['鼠标移动 / 手指拖动','控制战机 · 自动开火'],
     ['在幸存者上空悬停','圆环转满即救援成功'],
     ['道具: 1护盾 2炸弹','3激光 4追踪导弹'],
-    ['击败关底 BOSS (❤x200)','进入下一关'],
+    ['击败关底 BOSS (❤x2000)','进入下一关'],
   ];
   let y=380;
   for(const [a,b] of lines){
