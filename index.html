@@ -42,6 +42,16 @@ button{font-family:inherit}
 }
 .stat .num{font-size:22px;font-weight:700;line-height:1.2}
 .stat .lbl{font-size:12px;opacity:.8;margin-top:2px}
+.game-links{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+.game-link{
+  display:inline-flex;align-items:center;gap:9px;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.32);
+  color:#fff;text-decoration:none;font-size:14px;font-weight:600;
+  border-radius:12px;padding:11px 20px;backdrop-filter:blur(4px);
+  transition:background .15s,transform .15s;
+}
+.game-link:hover{background:rgba(255,255,255,.26);transform:translateY(-1px)}
+.game-link .ico{font-size:19px;line-height:1}
 .home-body{margin-top:-64px;padding-bottom:48px}
 .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
 .card h2{font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
@@ -310,6 +320,10 @@ select.ctl{
         网络安全员大赛 · 理论题库练习
       </h1>
       <div class="sub">网络安全员技能理论题库（公开部分）</div>
+      <div class="game-links">
+        <a class="game-link" href="game/game.html"><span class="ico">🧱</span>打砖块小游戏</a>
+        <a class="game-link" href="gem-journey/"><span class="ico">💎</span>宝石奇旅 · 消除游戏</a>
+      </div>
       <div class="stat-row">
         <div class="stat"><div class="num" id="st-total">–</div><div class="lbl">题库总量</div></div>
         <div class="stat"><div class="num" id="st-done">–</div><div class="lbl">已练习题数</div></div>
