@@ -64,7 +64,7 @@ function lsSet(k,v){try{localStorage.setItem(k,v);}catch(_){}}
 const G={mode:'title',level:1,score:0,hi:+(lsGet('rr_hs')||0),
   rescued:0,t:0,timeIn:0,phase:'waves',phaseT:0,spawnT:1.5,survT:2.5,bag:[],
   paused:false,muted:lsGet('rr_mute')==='1',shake:0,flash:0,dmgFlash:0,
-  overT:0,diff:1,bombFx:null,toasts:[],kills:0,
+  overT:0,diff:1,bombFx:null,toasts:[],kills:0,chainBoom:null,
   hiStart:0,runT:0,extendIdx:0,pity:0,shots:0,hitsN:0,rescueStreak:0,lastRescueAt:-99,wingStreak:0};
 let enemies=[],pBullets=[],eBullets=[],eMissiles=[],pHoming=[],pickups=[],survivors=[],parts=[],floats=[];
 let wingmen=[]; // 僚机(连续救援召唤, 可挡弹可被打掉)
@@ -324,7 +324,7 @@ function hitBtn(p,list,extra){
   for(const b of list){const rr=(extra||8)+b.r;const dx=p.x-b.x,dy=p.y-b.y;if(dx*dx+dy*dy<rr*rr)return b;}
   return null;
 }
-const pointers=new Map();
+const pointers=new Map();let pendBtn=null;
 canvas.addEventListener('pointerdown',e=>{
   e.preventDefault(); unlockAudio();
   const p=toLogical(e);
@@ -336,7 +336,12 @@ canvas.addEventListener('pointerdown',e=>{
     if(hitBtn(p,[ICON_PAUSE],12)){togglePause();pointers.set(e.pointerId,{role:'ui'});return;}
     if(!G.paused){
       const ui=hitBtn(p,BTNS);
-      if(ui){useItem(ui.id);ui.press=0.18;pointers.set(e.pointerId,{role:'ui'});return;}
+      if(ui){
+        ui.press=0.18;
+        if(e.pointerType==='mouse')useItem(ui.id);
+        else pendBtn={id:ui.id,x:p.x,y:p.y,pid:e.pointerId}; // 触屏: 抬指才算点按, 拖开取消
+        pointers.set(e.pointerId,{role:'ui'});return;
+      }
     }
   }
   if(hitBtn(p,[ICON_MUTE],12)){toggleMute();pointers.set(e.pointerId,{role:'ui'});return;}
@@ -355,7 +360,14 @@ canvas.addEventListener('pointermove',e=>{
   player.tx=player.x;player.ty=player.y;
   pt.lx=p.x;pt.ly=p.y;
 });
-function endPointer(e){pointers.delete(e.pointerId);}
+function endPointer(e){
+  if(pendBtn&&pendBtn.pid===e.pointerId){
+    const p=toLogical(e);
+    if(e.type==='pointerup'&&Math.hypot(p.x-pendBtn.x,p.y-pendBtn.y)<26)useItem(pendBtn.id);
+    pendBtn=null;
+  }
+  pointers.delete(e.pointerId);
+}
 canvas.addEventListener('pointerup',endPointer);
 canvas.addEventListener('pointercancel',endPointer);
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
@@ -612,12 +624,7 @@ function updBoss(dt){
       const bx=boss.x,by=boss.y;
       explode(bx,by,90,true);SND.bigboom();
       G.flash=0.8;G.shake=18;
-      for(let k=1;k<=5;k++){
-        setTimeout(()=>{
-          explode(bx+rand(-130,130),by+rand(-45,50),45,true);
-          SND.bigboom();G.shake=Math.max(G.shake,10);G.flash=Math.max(G.flash,0.25);
-        },k*170);
-      }
+      G.chainBoom={x:bx,y:by,n:5,t:0.17}; // 帧驱动连环爆炸, 暂停即冻结
       const bonus=15000+G.level*3000;G.score+=bonus;
       dropPickup(bx-60,by,'P');dropPickup(bx,by,'H');dropPickup(bx+60,by,'B');
       boss=null;
@@ -944,6 +951,15 @@ function updHoming(dt){
 /* ================= 主更新 ================= */
 function update(dt){
   G.timeIn+=dt;G.phaseT+=dt;G.runT+=dt;
+  if(G.chainBoom){
+    G.chainBoom.t-=dt;
+    if(G.chainBoom.t<=0){
+      G.chainBoom.t=0.17;
+      explode(G.chainBoom.x+rand(-130,130),G.chainBoom.y+rand(-45,50),45,true);
+      SND.bigboom();G.shake=Math.max(G.shake,10);G.flash=Math.max(G.flash,0.25);
+      if(--G.chainBoom.n<=0)G.chainBoom=null;
+    }
+  }
   camY-=SCROLLV*dt;
   // 关卡阶段
   if(G.phase==='waves'){
@@ -1620,20 +1636,21 @@ function drawTitle(){
   // 说明
   const lines=[
     ['鼠标移动 / 手指拖动','控制战机 · 自动开火'],
+    ['键盘: WASD/方向键移动','P暂停 · R重开 · M静音'],
     ['在幸存者上空悬停','圆环转满即救援成功'],
     ['连续救援 2 人','召唤僚机 · 挡弹+导弹'],
     ['道具: 1护盾 2炸弹','3激光 4追踪导弹'],
     ['击败关底 BOSS 战舰','进入下一关 (BOSS 随关卡增强)'],
   ];
-  let y=368;
+  let y=356;
   for(const [a,b] of lines){
     txtC(a,VW/2,y,10,'#cfd6e4','center');
     txtC(b,VW/2,y+18,10,'#7a95b5','center');
     y+=42;
   }
-  txtC('最高分 '+pad(G.hi,7),VW/2,590,10,'#ffd24d','center');
-  if(Math.floor(G.t*2)%2)txtC('- 点击画面开始 -',VW/2,660,13,'#7dffa0','center');
-  txtC('❤ x5 · 高分奖命 5万/15万/30万 · 救援有奖',VW/2,710,8,'#7a95b5','center');
+  txtC('最高分 '+pad(G.hi,7),VW/2,604,10,'#ffd24d','center');
+  if(Math.floor(G.t*2)%2)txtC('- 点击画面开始 -',VW/2,664,13,'#7dffa0','center');
+  txtC('❤ x5 · 高分奖命 5万/15万/30万 · 救援有奖',VW/2,712,8,'#7a95b5','center');
 }
 function drawOver(){
   ctx.fillStyle='rgba(2,6,14,0.7)';ctx.fillRect(0,0,VW,VH);
@@ -1658,7 +1675,7 @@ function startGame(){
   boss=null;wingmen=[];
   Object.assign(G,{mode:'play',level:1,score:0,rescued:0,timeIn:0,phase:'waves',phaseT:0,
     spawnT:1.2,survT:2.5,paused:false,shake:0,flash:0,dmgFlash:0,overT:0,diff:1,bombFx:null,toasts:[],kills:0,
-    hiStart:G.hi,runT:0,extendIdx:0,pity:0,shots:0,hitsN:0,rescueStreak:0,lastRescueAt:-99,wingStreak:0});
+    hiStart:G.hi,runT:0,extendIdx:0,pity:0,shots:0,hitsN:0,rescueStreak:0,lastRescueAt:-99,wingStreak:0,chainBoom:null});
   applyPalette(1);chunkMap.clear();
   Object.assign(player,{x:VW/2,y:VH-150,tx:VW/2,ty:VH-150,px:VW/2,hp:5,maxHp:5,inv:2,fireT:0,power:1,alive:true,missT:0});
   items.shield.stock=1;items.shield.t=0;items.shield.hits=0;
