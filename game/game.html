@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BRICKFALL · 破碎星域</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ============ HUD ============ -->
+    <header id="hud" class="hidden">
+      <div class="hud-group">
+        <div class="hud-item"><label>SCORE</label><span id="hud-score">0</span></div>
+        <div class="hud-item"><label>LEVEL</label><span id="hud-level">-</span></div>
+        <div class="hud-item"><label>LIVES</label><span id="hud-lives">♥♥♥</span></div>
+        <div class="hud-item" id="hud-time"><label>TIME</label><span id="hud-time-n">90s</span></div>
+      </div>
+      <div class="hud-group hud-mid">
+        <div id="hud-combo"><span id="hud-combo-n">0</span><em>COMBO</em><span id="hud-combo-val">×1</span>
+          <div class="combo-bar"><div id="hud-combo-bar"></div></div>
+        </div>
+        <div class="speed-wrap" title="球速">
+          <div class="speed-bar"><div id="hud-speed-bar"></div></div>
+        </div>
+      </div>
+      <div class="hud-group">
+        <div id="hud-buffs"></div>
+        <button id="hud-bombs" class="none" title="引爆炸弹 (B / 右键 / 点击)">💣 <span id="hud-bombs-n">0</span></button>
+        <button id="btn-pause" title="暂停 (P / Esc)">⏸</button>
+      </div>
+      <div id="hud-boss"><span id="hud-boss-name">BOSS</span><div class="boss-bar"><div id="hud-boss-fill"></div></div></div>
+    </header>
+
+    <!-- ============ 游戏舞台 ============ -->
+    <div id="stage">
+      <canvas id="game" width="1000" height="640"></canvas>
+
+      <!-- 事件横幅 -->
+      <div id="banner"></div>
+
+      <!-- ============ 主菜单 ============ -->
+      <div class="screen active" id="scr-menu">
+        <div class="menu-box">
+          <h1 class="game-title">BRICK<span>FALL</span></h1>
+          <p class="game-sub">破 碎 星 域</p>
+          <div id="menu-best"></div>
+          <div class="menu-btns">
+            <button class="mbtn primary" id="btn-continue">开始游戏</button>
+            <button class="mbtn" id="btn-levels">选择关卡</button>
+            <button class="mbtn" id="btn-endless">无尽模式</button>
+            <button class="mbtn" id="btn-time">限时挑战</button>
+            <button class="mbtn" id="btn-challenge">挑战模式</button>
+            <button class="mbtn" id="btn-rush">BOSS 连战</button>
+            <button class="mbtn" id="btn-classic">经典模式</button>
+            <div class="menu-row">
+              <button class="mbtn small" id="btn-ach">🏆 成就</button>
+              <button class="mbtn small" id="btn-settings">⚙ 设置</button>
+            </div>
+          </div>
+          <p class="menu-help">移动鼠标 / 手指 · 控制挡板 &nbsp;|&nbsp; 点击 / 空格 · 发射与激光<br>
+          B / 右键 · 引爆炸弹 &nbsp;|&nbsp; P / Esc · 暂停 &nbsp;|&nbsp; ← → / A D · 键盘移动</p>
+        </div>
+      </div>
+
+      <!-- ============ 关卡选择 ============ -->
+      <div class="screen" id="scr-levels">
+        <div class="panel">
+          <h2>选择关卡</h2>
+          <div id="levels-grid"></div>
+          <button class="mbtn back" id="btn-levels-back">← 返回</button>
+        </div>
+      </div>
+
+      <!-- ============ 设置 ============ -->
+      <div class="screen" id="scr-settings">
+        <div class="panel narrow">
+          <h2>设置</h2>
+          <div class="set-row"><label>音乐音量</label><input type="range" id="set-music" min="0" max="1" step="0.05"></div>
+          <div class="set-row"><label>音效音量</label><input type="range" id="set-sfx" min="0" max="1" step="0.05"></div>
+          <div class="set-row"><label>高画质粒子</label><input type="checkbox" id="set-particles" checked></div>
+          <button class="mbtn danger" id="btn-reset-save">清空存档</button>
+          <button class="mbtn back" id="btn-settings-back">← 返回</button>
+        </div>
+      </div>
+
+      <!-- ============ 成就 ============ -->
+      <div class="screen" id="scr-ach">
+        <div class="panel">
+          <h2>成就</h2>
+          <div id="ach-list"></div>
+          <button class="mbtn back" id="btn-ach-back">← 返回</button>
+        </div>
+      </div>
+
+      <!-- ============ 挑战模式 ============ -->
+      <div class="screen" id="scr-challenge">
+        <div class="panel narrow">
+          <h2>挑战模式</h2>
+          <div id="challenge-list"></div>
+          <button class="mbtn back" id="btn-challenge-back">← 返回</button>
+        </div>
+      </div>
+
+      <!-- ============ 暂停 ============ -->
+      <div class="screen" id="scr-pause">
+        <div class="panel narrow">
+          <h2>⏸ 已暂停</h2>
+          <button class="mbtn primary" id="btn-resume">继续游戏</button>
+          <button class="mbtn" id="btn-restart">重新开始</button>
+          <button class="mbtn" id="btn-pause-settings">设置</button>
+          <button class="mbtn" id="btn-exit">退出到主菜单</button>
+        </div>
+      </div>
+
+      <!-- ============ 通关结算 ============ -->
+      <div class="screen" id="scr-clear">
+        <div class="panel narrow">
+          <h2 id="clear-title">LEVEL CLEAR</h2>
+          <div id="clear-stars"></div>
+          <div id="clear-stats" class="stats"></div>
+          <div class="menu-row">
+            <button class="mbtn primary" id="btn-next">下一关 ▶</button>
+            <button class="mbtn" id="btn-replay">重新挑战</button>
+          </div>
+          <div class="menu-row">
+            <button class="mbtn small" id="btn-clear-menu">主菜单</button>
+            <button class="mbtn small" id="btn-clear-levels">选关</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 失败 ============ -->
+      <div class="screen" id="scr-over">
+        <div class="panel narrow">
+          <h2 class="danger">GAME OVER</h2>
+          <div id="over-stats" class="stats"></div>
+          <div class="menu-row">
+            <button class="mbtn primary" id="btn-retry">重新开始</button>
+            <button class="mbtn" id="btn-over-menu">主菜单</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 胜利 ============ -->
+      <div class="screen" id="scr-victory">
+        <div class="panel narrow">
+          <h2 class="win" id="victory-title">VICTORY!</h2>
+          <div id="victory-stats" class="stats"></div>
+          <button class="mbtn primary" id="btn-victory-menu">返回主菜单</button>
+        </div>
+      </div>
+
+      <!-- 提示堆栈 -->
+      <div id="toasts"></div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/save.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
