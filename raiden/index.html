@@ -755,7 +755,13 @@ const BOSSDEF=[
   {name:'狂暴圣诞老人',zod:'射手座',sway:[62,88,124],santa:1},
   {name:'歼星机械巨神',zod:'水瓶座',sway:[30,45,70],robo:1},
 ];
-function bossDef(){return BOSSDEF[(G.level-1)%BOSSDEF.length];}
+function bossDef(){
+  const base=BOSSDEF[(G.level-1)%BOSSDEF.length];
+  const cycle=Math.floor((G.level-1)/BOSSDEF.length); // 0=首周目
+  if(cycle<=0)return base;
+  const pre=['真·','狱·','神·'][Math.min(cycle-1,2)];
+  return Object.assign({},base,{name:pre+base.name,evo:cycle});
+}
 function spawnBoss(){
   const bhp=Math.round(2000*(0.75+0.25*G.level));
   boss={x:VW/2,y:-280,hp:bhp,maxHp:bhp,state:'enter',t:0,atkT:3,ringT:5,beamT:6,planeT:5,volT:5,hitT:0,beams:[],swayPh:rand(0,TAU),
@@ -1729,12 +1735,17 @@ function drawBoss(){
   ctx.save();ctx.translate(b.x+jx,b.y+jy);
   const ph=bossPhase();
   const DEF=bossDef();
+  if(DEF.evo){ // 周目进化: 整体色相偏移(真·+120° 狱·+240° 神·+300°)
+    ctx.save();
+    ctx.filter='hue-rotate('+((DEF.evo===1?120:DEF.evo===2?240:300))+'deg) saturate(1.35)';
+  }
   if(DEF.crab)drawBossCrab(b,ph);
   else if(DEF.scorp)drawBossScorp(b,ph);
   else if(DEF.dino)drawBossDino(b,ph);
   else if(DEF.santa)drawBossSanta(b,ph);
   else if(DEF.robo)drawBossRobo(b,ph);
   else drawBossShip(b,ph);
+  if(DEF.evo)ctx.restore();
   // 濒死燃烧变黑(通用椭圆罩)
   if(b.state==='dying'){
     const burn=clamp(b.t/2.3*0.55,0,0.55);
@@ -2476,7 +2487,7 @@ function frame(ts){
   last=now;
   G.t+=dt;
   if(!G.paused){
-        if(G.mode==='play')update(dt);
+            if(G.mode==='play')update(dt);
     else{
       camY-=SCROLLV*dt;
       if(G.mode==='over')G.overT+=dt;
