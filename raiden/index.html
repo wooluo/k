@@ -311,7 +311,7 @@ const BTNS=[
   {id:'missile',x:412,y:VH-64,r:30,key:'4',label:'追踪'},
 ];
 const ICON_PAUSE={x:VW-30,y:30,r:17}, ICON_MUTE={x:VW-72,y:30,r:17};
-const PAUSE_BTN={x:VW/2,y:VH*0.53,w:210,h:64}, PAUSE_BTN2={x:VW/2,y:VH*0.53+96,w:210,h:52};
+const PAUSE_BTN={x:VW/2,y:VH*0.53,w:210,h:64}, PAUSE_BTN2={x:VW/2,y:VH*0.53+96,w:210,h:52}, PAUSE_BTN3={x:VW/2,y:VH*0.53+152,w:210,h:44}, TITLE_CONT={x:VW/2,y:648,w:280,h:52};
 function hitRect(p,b){return p.x>b.x-b.w/2&&p.x<b.x+b.w/2&&p.y>b.y-b.h/2&&p.y<b.y+b.h/2;}
 function rrect(x,y,w,h,r){
   ctx.beginPath();
@@ -338,6 +338,7 @@ canvas.addEventListener('pointerdown',e=>{
     // 暂停界面的大"继续"按钮
     if(G.paused&&hitRect(p,PAUSE_BTN)){togglePause();pointers.set(e.pointerId,{role:'ui'});return;}
     if(G.paused&&hitRect(p,PAUSE_BTN2)){startGame();pointers.set(e.pointerId,{role:'ui'});return;}
+    if(G.paused&&hitRect(p,PAUSE_BTN3)){saveGame();saveFlashT=performance.now();pointers.set(e.pointerId,{role:'ui'});return;}
     // 暂停按钮在暂停状态下也要能点(再点一次恢复)
     if(hitBtn(p,[ICON_PAUSE],12)){togglePause();pointers.set(e.pointerId,{role:'ui'});return;}
     if(!G.paused){
@@ -352,6 +353,7 @@ canvas.addEventListener('pointerdown',e=>{
   }
   if(hitBtn(p,[ICON_MUTE],12)){toggleMute();pointers.set(e.pointerId,{role:'ui'});return;}
   pointers.set(e.pointerId,{role:'field',lx:p.x,ly:p.y,type:e.pointerType});
+  if(G.mode==='title'&&loadSave()&&hitRect(p,TITLE_CONT)){continueGame();pointers.set(e.pointerId,{role:'ui'});return;}
   if(G.mode!=='play'||G.paused){tryStart();return;}
   if(e.pointerType==='mouse'){mouseSeen=true;player.tx=p.x;player.ty=p.y;}
   try{canvas.setPointerCapture(e.pointerId);}catch(_){}
@@ -383,6 +385,7 @@ window.addEventListener('keydown',e=>{
   keys.add(e.code);
   if(e.code==='KeyP')togglePause();
   if(e.code==='KeyM')toggleMute();
+  if(e.code==='KeyC'&&G.mode==='title'&&loadSave()){continueGame();return;}
   if(e.code==='KeyR'&&((G.mode==='over'&&G.overT>1)||(G.mode==='play'&&G.paused)))startGame();
   if(e.code==='Enter'||e.code==='Space'){if(G.mode!=='play')tryStart();}
   const map={Digit1:'shield',Digit2:'bomb',Digit3:'laser',Digit4:'missile',Numpad1:'shield',Numpad2:'bomb',Numpad3:'laser',Numpad4:'missile'};
@@ -391,6 +394,31 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('keyup',e=>keys.delete(e.code));
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.mode==='play')G.paused=true;});
 function togglePause(){if(G.mode!=='play')return;G.paused=!G.paused;if(actx){G.paused?actx.suspend():actx.resume();}}
+/* ================= 本地存档 ================= */
+let saveFlashT=0;
+function saveGame(){ // 快照标量状态;读档从本关开头继续(弹幕/敌机现场不序列化)
+  const s={v:1,lv:G.level,sc:G.score,hi:G.hi,rs:G.rescued,k:G.kills,rt:G.runT,ext:G.extendIdx,pity:G.pity,
+    hp:player.hp,mhp:player.maxHp,wpn:player.wpn,wl:{...player.wpnLv},wm:wingmen.length,
+    its:{sh:items.shield.stock,bo:items.bomb.stock,la:items.laser.stock,mi:items.missile.stock},
+    t:Date.now()};
+  lsSet('rr_save',JSON.stringify(s));
+}
+function loadSave(){try{const s=JSON.parse(lsGet('rr_save'));return (s&&s.v===1)?s:null;}catch(_){return null;}}
+function continueGame(){
+  const s=loadSave();if(!s)return false;
+  startGame(); // 先复位全场(含音轨/僚机/道具计时)
+  G.level=s.lv;G.diff=1+(G.level-1)*0.09;
+  G.score=s.sc;G.rescued=s.rs;G.kills=s.k;G.runT=s.rt;G.extendIdx=s.ext||0;G.pity=s.pity||0;
+  G.phase='waves';G.timeIn=0;G.spawnT=1.2;G.survT=2.5;
+  applyPalette(G.level);chunkMap.clear();buildBag();
+  player.hp=s.hp;player.maxHp=s.mhp;player.wpn=s.wpn;
+  player.wpnLv=Object.assign({A:1,B:1,C:1,D:1,E:1,F:1,G:1},s.wl||{});
+  items.shield.stock=s.its.sh;items.bomb.stock=s.its.bo;items.laser.stock=s.its.la;items.missile.stock=s.its.mi;
+  spawnWingmen(Math.min(2,s.wm||0));
+  G.toasts.length=0;
+  toast('读档成功 · 第 '+G.level+' 关 继续');
+  return true;
+}
 function toggleMute(){G.muted=!G.muted;lsSet('rr_mute',G.muted?'1':'0');if(master)master.gain.value=G.muted?0:0.55;toast(G.muted?'静音 开':'静音 关');}
 function tryStart(){
   if(G.mode==='title'){startGame();return;}
@@ -2398,6 +2426,12 @@ for(let i=pulses.length-1;i>=0;i--){
     ctx.fillStyle='rgba(58,16,26,0.95)';ctx.fill();
     ctx.strokeStyle='rgba(255,90,110,0.6)';ctx.lineWidth=2;ctx.stroke();
     txtC('重新出击',rb.x,rb.y,14,'#ff8fa3','center');
+    const sb=PAUSE_BTN3, just=performance.now()-saveFlashT<1200;
+    rrect(sb.x-sb.w/2,sb.y-sb.h/2,sb.w,sb.h,12);
+    ctx.fillStyle=just?'rgba(16,58,38,0.95)':'rgba(22,34,58,0.95)';ctx.fill();
+    ctx.strokeStyle=just?'rgba(125,255,160,0.9)':'rgba(120,150,200,0.55)';ctx.lineWidth=2;ctx.stroke();
+    txtC(just?'已存档 ✓':'存 档',sb.x,sb.y,13,just?'#7dffa0':'#a9c3e8','center');
+    txtC('本地保存 · 标题页可继续',sb.x,sb.y+30,9,'#7a95b5','center');
     txtC('放弃本局 从第 1 关重新开始 (R)',VW/2,rb.y+48,9,'#8896ad','center');
     txtC('点击画面任意处或按 P 也可继续',VW/2,rb.y+76,9,'#8896ad','center');
   }
@@ -2434,8 +2468,19 @@ function drawTitle(){
     y+=42;
   }
   txtC('最高分 '+pad(G.hi,7),VW/2,604,10,'#ffd24d','center');
-  if(Math.floor(G.t*2)%2)txtC('- 点击画面开始 -',VW/2,664,13,'#7dffa0','center');
-  txtC('❤ x5 · 高分奖命 5万/15万/30万 · 救援有奖',VW/2,712,8,'#7a95b5','center');
+  const sv=loadSave();
+  if(sv){ // 有本地存档: 大按钮续档
+    const cb=TITLE_CONT, pulse=0.5+0.5*Math.sin(G.t*4);
+    rrect(cb.x-cb.w/2,cb.y-cb.h/2,cb.w,cb.h,16);
+    ctx.fillStyle='rgba(16,58,38,0.95)';ctx.fill();
+    ctx.strokeStyle='rgba(125,255,160,'+(0.45+0.55*pulse)+')';ctx.lineWidth=3;ctx.stroke();
+    txtC('▶ 继续游戏 · 第 '+sv.lv+' 关',cb.x,cb.y-8,16,'#7dffa0','center');
+    txtC('分数 '+pad(sv.sc,7)+' · 按C或点击',cb.x,cb.y+13,9,'#cfd6e4','center');
+    txtC('点击其他区域 · 新开局',VW/2,712,9,'#7a95b5','center');
+  }else{
+    if(Math.floor(G.t*2)%2)txtC('- 点击画面开始 -',VW/2,664,13,'#7dffa0','center');
+    txtC('❤ x5 · 高分奖命 5万/15万/30万 · 救援有奖',VW/2,712,8,'#7a95b5','center');
+  }
 }
 function drawOver(){
   ctx.fillStyle='rgba(2,6,14,0.7)';ctx.fillRect(0,0,VW,VH);
@@ -2487,7 +2532,7 @@ function frame(ts){
   last=now;
   G.t+=dt;
   if(!G.paused){
-            if(G.mode==='play')update(dt);
+                    if(G.mode==='play')update(dt);
     else{
       camY-=SCROLLV*dt;
       if(G.mode==='over')G.overT+=dt;
