@@ -255,15 +255,17 @@ const pointers=new Map();
 canvas.addEventListener('pointerdown',e=>{
   e.preventDefault(); unlockAudio();
   const p=toLogical(e);
-  const inGame=G.mode==='play'&&!G.paused;
-  if(inGame){
-    const ui=hitBtn(p,BTNS);
-    if(ui){useItem(ui.id);ui.press=0.18;pointers.set(e.pointerId,{role:'ui'});return;}
+  if(G.mode==='play'){
+    // 暂停按钮在暂停状态下也要能点(再点一次恢复)
     if(hitBtn(p,[ICON_PAUSE],12)){togglePause();pointers.set(e.pointerId,{role:'ui'});return;}
+    if(!G.paused){
+      const ui=hitBtn(p,BTNS);
+      if(ui){useItem(ui.id);ui.press=0.18;pointers.set(e.pointerId,{role:'ui'});return;}
+    }
   }
   if(hitBtn(p,[ICON_MUTE],12)){toggleMute();pointers.set(e.pointerId,{role:'ui'});return;}
   pointers.set(e.pointerId,{role:'field',lx:p.x,ly:p.y,type:e.pointerType});
-  if(G.mode!=='play'){tryStart();return;}
+  if(G.mode!=='play'||G.paused){tryStart();return;}
   if(e.pointerType==='mouse'){mouseSeen=true;player.tx=p.x;player.ty=p.y;}
   try{canvas.setPointerCapture(e.pointerId);}catch(_){}
 });
