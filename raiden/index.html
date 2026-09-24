@@ -243,6 +243,17 @@ const BTNS=[
   {id:'missile',x:412,y:VH-64,r:30,key:'4',label:'追踪'},
 ];
 const ICON_PAUSE={x:VW-30,y:30,r:17}, ICON_MUTE={x:VW-72,y:30,r:17};
+const PAUSE_BTN={x:VW/2,y:VH*0.53,w:210,h:64};
+function hitRect(p,b){return p.x>b.x-b.w/2&&p.x<b.x+b.w/2&&p.y>b.y-b.h/2&&p.y<b.y+b.h/2;}
+function rrect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
 function toLogical(e){
   const r=canvas.getBoundingClientRect();
   return {x:(e.clientX-r.left)/r.width*VW,y:(e.clientY-r.top)/r.height*VH};
@@ -256,6 +267,8 @@ canvas.addEventListener('pointerdown',e=>{
   e.preventDefault(); unlockAudio();
   const p=toLogical(e);
   if(G.mode==='play'){
+    // 暂停界面的大"继续"按钮
+    if(G.paused&&hitRect(p,PAUSE_BTN)){togglePause();pointers.set(e.pointerId,{role:'ui'});return;}
     // 暂停按钮在暂停状态下也要能点(再点一次恢复)
     if(hitBtn(p,[ICON_PAUSE],12)){togglePause();pointers.set(e.pointerId,{role:'ui'});return;}
     if(!G.paused){
@@ -1371,7 +1384,15 @@ function render(){
   if(G.paused&&G.mode==='play'){
     ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(0,0,VW,VH);
     txtC('已暂停',VW/2,VH*0.4,26,'#ffd24d','center');
-    txtC('点击画面或按 P 继续',VW/2,VH*0.4+40,11,'#cfd6e4','center');
+    // 继续按钮
+    const pb=PAUSE_BTN, pulse=0.5+0.5*Math.sin(G.t*4);
+    rrect(pb.x-pb.w/2,pb.y-pb.h/2,pb.w,pb.h,16);
+    ctx.fillStyle='rgba(16,58,38,0.95)';ctx.fill();
+    ctx.strokeStyle='rgba(125,255,160,'+(0.45+0.55*pulse)+')';ctx.lineWidth=3;ctx.stroke();
+    ctx.fillStyle='#7dffa0';
+    ctx.beginPath();ctx.moveTo(pb.x-52,pb.y-14);ctx.lineTo(pb.x-52,pb.y+14);ctx.lineTo(pb.x-28,pb.y);ctx.closePath();ctx.fill();
+    txtC('继 续',pb.x+16,pb.y,20,'#ffffff','center');
+    txtC('点击画面任意处或按 P 也可继续',VW/2,pb.y+72,9,'#8896ad','center');
   }
 }
 function drawTitle(){
