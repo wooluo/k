@@ -2,15 +2,17 @@
 (function(){
 const $=id=>document.getElementById(id);
 const CV=$('game'),CX=CV.getContext('2d');
-const VW=30,VH=20;
+const VW=30;let VH=20;
 CX.imageSmoothingEnabled=false;
 
-/* ---------- 缩放适配 ---------- */
+/* ---------- 缩放适配（VH 按屏比动态，长屏无黑边） ---------- */
 function fit(){
-  const w=innerWidth,h=innerHeight,r=480/320;
-  let cw=w,ch=w/r;if(ch>h){ch=h;cw=h*r;}
-  const wr=$('wrap');wr.style.width=cw+'px';wr.style.height=ch+'px';
-  CV.style.width=cw+'px';CV.style.height=ch+'px';
+  const w=innerWidth,h=innerHeight;
+  VH=Math.max(16,Math.min(27,Math.round(VW*h/w)));
+  CV.width=VW*16;CV.height=VH*16;
+  CX.imageSmoothingEnabled=false;
+  const wr=$('wrap');wr.style.width=w+'px';wr.style.height=h+'px';
+  CV.style.width=w+'px';CV.style.height=h+'px';
 }
 addEventListener('resize',fit);fit();
 
@@ -26,7 +28,7 @@ let frame=0;
 function drawScene(){
   const m=Eng.map;if(!m)return;
   const[cx,cy]=camXY(),p=Eng.player;
-  CX.fillStyle='#0a0812';CX.fillRect(0,0,480,320);
+  CX.fillStyle='#0a0812';CX.fillRect(0,0,CV.width,CV.height);
   for(let ty=0;ty<VH;ty++)for(let tx=0;tx<VW;tx++){
     const mx=cx+tx,my=cy+ty;
     if(mx<0||my<0||mx>=m.w||my>=m.h)continue;
@@ -36,7 +38,7 @@ function drawScene(){
   /* 出口闪烁标记 */
   (m.exits||[]).forEach(e=>{
     const sx=(e.x-cx)*16,sy=(e.y-cy)*16;
-    if(sx<-16||sy<-16||sx>480||sy>320)return;
+    if(sx<-16||sy<-16||sx>CV.width||sy>CV.height)return;
     if(plotStage>=e.plot&&(frame>>3)%2===0){
       CX.fillStyle='rgba(244,196,48,.85)';
       CX.fillRect(sx+6,sy+2,4,3);CX.fillRect(sx+4,sy+6,8,3);CX.fillRect(sx+2,sy+10,12,3);
@@ -45,7 +47,7 @@ function drawScene(){
   /* 明雷 */
   Eng.foeSpots.forEach(f=>{
     const sx=(f.x-cx)*16,sy=(f.y-cy)*16;
-    if(sx<-16||sy<-16||sx>480||sy>320)return;
+    if(sx<-16||sy<-16||sx>CV.width||sy>CV.height)return;
     drawShadow(CX,sx+8,sy+14);
     CX.drawImage(foeCv(f.sp),sx,sy,16,16);
     CX.fillStyle='#ff5040';CX.fillRect(sx+11,sy+1,4,4);
@@ -53,7 +55,7 @@ function drawScene(){
   /* NPC */
   (m.npcs||[]).forEach(n=>{
     const sx=(n.x-cx)*16,sy=(n.y-cy)*16;
-    if(sx<-16||sy<-16||sx>480||sy>320)return;
+    if(sx<-16||sy<-16||sx>CV.width||sy>CV.height)return;
     if(n.spr&&SPRITES[n.spr]){
       const fr=SPRITES[n.spr].down[frame>>4&1];
       drawShadow(CX,sx+8,sy+14);
