@@ -8,13 +8,100 @@ CX.imageSmoothingEnabled=false;
 /* ---------- 缩放适配（VH 按屏比动态，长屏无黑边） ---------- */
 function fit(){
   const w=innerWidth,h=innerHeight;
-  VH=Math.max(16,Math.min(27,Math.round(VW*h/w)));
+  VH=Math.max(16,Math.min(72,Math.round(VW*h/w)));
   CV.width=VW*16;CV.height=VH*16;
   CX.imageSmoothingEnabled=false;
   const wr=$('wrap');wr.style.width=w+'px';wr.style.height=h+'px';
   CV.style.width=w+'px';CV.style.height=h+'px';
+  for(const id of['tcv','bscene']){const c=$(id);if(c){c.width=w;c.height=h;}}
 }
 addEventListener('resize',fit);fit();
+
+/* ---------- 水墨画布（标题/战斗共用画师） ---------- */
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+const TITLE_STARS=(()=>{const r=mulberry(7),a=[];for(let i=0;i<70;i++)a.push({x:r(),y:r()*0.62,s:r()<0.2?2:1,p:r()*6.28,v:0.5+r()});return a;})();
+const INK_PETALS=(()=>{const r=mulberry(21),a=[];for(let i=0;i<16;i++)a.push({x:r(),y:r(),v:0.3+r()*0.5,s:3+r()*4,p:r()*6.28});return a;})();
+let monkeySil=null;
+function inkSil(cv){const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const x=c.getContext('2d');x.drawImage(cv,0,0);x.globalCompositeOperation='source-in';x.fillStyle='rgba(7,10,20,.93)';x.fillRect(0,0,c.width,c.height);return c;}
+function inkRidge(cx,W,H,base,amp,seed,col){ /* 水墨山脊填充，返回控制点供放剪影 */
+  const r=mulberry(seed),n=9,pts=[];
+  for(let i=0;i<=n;i++)pts.push(base+(r()-0.5)*amp*2);
+  cx.beginPath();cx.moveTo(-30,H+30);
+  for(let i=0;i<n;i++){
+    const x=i*W/n,y=pts[i],nx=(i+1)*W/n,ny=pts[i+1];
+    for(let s=0;s<=6;s++){const u=s/6,mu=(1-Math.cos(u*Math.PI))/2;cx.lineTo(x+(nx-x)*u,y+(ny-y)*mu);}
+  }
+  cx.lineTo(W+30,H+30);cx.closePath();cx.fillStyle=col;cx.fill();
+  return pts;
+}
+function paintInk(cx,W,H,t,pal,title){
+  if(!W||!H)return;
+  const g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,pal.sky[0]);g.addColorStop(1,pal.sky[1]);
+  cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  if(title){cx.fillStyle=pal.moon;
+    TITLE_STARS.forEach(s=>{cx.globalAlpha=0.2+0.6*Math.abs(Math.sin(t*s.v+s.p));cx.fillRect(s.x*W,s.y*H,s.s,s.s);});
+    cx.globalAlpha=1;}
+  /* 月 + 光晕 */
+  const mx=title?W*0.7:W*0.5,my=H*(title?0.21:0.15),mr=Math.min(W,H)*(title?0.13:0.10);
+  const halo=cx.createRadialGradient(mx,my,mr*0.4,mx,my,mr*2.6);
+  halo.addColorStop(0,'rgba(255,246,220,.26)');halo.addColorStop(1,'rgba(255,246,220,0)');
+  cx.fillStyle=halo;cx.fillRect(mx-mr*2.7,my-mr*2.7,mr*5.4,mr*5.4);
+  cx.fillStyle=pal.moon;cx.beginPath();cx.arc(mx,my,mr,0,7);cx.fill();
+  cx.fillStyle='rgba(0,0,0,.07)';
+  cx.beginPath();cx.arc(mx-mr*0.3,my-mr*0.15,mr*0.24,0,7);cx.fill();
+  cx.beginPath();cx.arc(mx+mr*0.28,my+mr*0.32,mr*0.16,0,7);cx.fill();
+  /* 流云 */
+  cx.fillStyle=pal.mist;
+  for(let i=0;i<3;i++){
+    const cy2=H*(0.30+i*0.14),cw=W*(0.5+i*0.2);
+    const cxp=((t*(7+i*4)+i*W*0.45)%(W+cw))-cw*0.6;
+    for(let k=0;k<4;k++){cx.beginPath();cx.ellipse(cxp+k*cw*0.22,cy2+((k%2)*7),cw*0.2,9+((k%2)*6),0,0,7);cx.fill();}
+  }
+  /* 三层水墨远山（远→近 渐深） */
+  inkRidge(cx,W,H,H*0.50,H*0.10,31,pal.far);
+  const pts2=inkRidge(cx,W,H,H*0.63,H*0.11,77,pal.mid);
+  inkRidge(cx,W,H,H*0.78,H*0.12,123,pal.near);
+  /* 山巅猴影（仅标题） */
+  if(title){
+    if(!monkeySil&&typeof SPRITES!=='undefined'&&SPRITES.wukong)monkeySil=inkSil(SPRITES.wukong.down[0]);
+    if(monkeySil){
+      let bi=0;pts2.forEach((y,i)=>{if(y<pts2[bi])bi=i;});
+      const px=bi*W/9,py=pts2[bi]+2,sc=Math.max(3,Math.round(W/180));
+      cx.drawImage(monkeySil,px-8*sc,py-16*sc+2,16*sc,16*sc);
+    }
+  }
+  /* 落瓣（仅标题） */
+  if(title){
+    INK_PETALS.forEach(p=>{
+      const y=((p.y+t*p.v*0.045)%1.15-0.07)*H;
+      const x=(p.x+Math.sin(t*0.7+p.p)*0.035)*W,rot=t*0.9+p.p;
+      cx.save();cx.translate(x,y);cx.rotate(rot);
+      cx.fillStyle='rgba(236,178,150,.55)';
+      cx.beginPath();cx.ellipse(0,0,p.s,p.s*0.55,0,0,7);cx.fill();cx.restore();
+    });
+  }
+  /* 地雾 + 底部压暗（保 UI 可读） */
+  const fog=cx.createLinearGradient(0,H*0.66,0,H);
+  fog.addColorStop(0,'rgba(200,215,235,0)');fog.addColorStop(1,pal.fogB);
+  cx.fillStyle=fog;cx.fillRect(0,H*0.66,W,H*0.34);
+  const vig=cx.createLinearGradient(0,H*0.6,0,H);
+  vig.addColorStop(0,'rgba(0,0,0,0)');vig.addColorStop(1,'rgba(0,0,0,.5)');
+  cx.fillStyle=vig;cx.fillRect(0,H*0.6,W,H*0.4);
+}
+/* 战斗场景按地图主题选调色板 */
+const PAL_DEF={sky:['#0b1226','#1e3252'],far:'#24405e',mid:'#16283e',near:'#0d1a2c',mist:'rgba(170,210,235,.09)',moon:'#f2e8cc',fogB:'rgba(150,180,210,.10)'};
+const BPALS=[
+  [['龙宫','东海','之滨'],{sky:['#07293b','#0e4c62'],far:'#1a5c6e',mid:'#104250',near:'#092c38',mist:'rgba(150,225,235,.11)',moon:'#d8f0f2',fogB:'rgba(120,200,215,.10)'}],
+  [['地府','阎罗','幽冥'],{sky:['#130b1f','#2a1438'],far:'#3c2252',mid:'#2a1638',near:'#180b26',mist:'rgba(190,160,230,.09)',moon:'#e0d0f4',fogB:'rgba(150,120,190,.10)'}],
+  [['天宫','南天','兜率','瑶池','御马'],{sky:['#2b2342','#584a72'],far:'#70588c',mid:'#503e6a',near:'#372a50',mist:'rgba(255,232,170,.13)',moon:'#ffedb8',fogB:'rgba(230,205,160,.10)'}],
+  [['洞'],{sky:['#0c141e','#243244'],far:'#2e4050',mid:'#1e2c3a',near:'#141e2a',mist:'rgba(160,190,215,.08)',moon:'#cdd8e0',fogB:'rgba(140,170,195,.09)'}],
+  [['方寸','三星'],{sky:['#0a1a16','#1c342c'],far:'#265044',mid:'#183830',near:'#0e241e',mist:'rgba(170,225,200,.09)',moon:'#e2f0dc',fogB:'rgba(150,200,180,.10)'}],
+];
+function battlePal(){
+  const nm=(Eng.map&&Eng.map.name)||'';
+  for(const[ks,p]of BPALS)if(ks.some(k=>nm.includes(k)))return p;
+  return PAL_DEF;
+}
 
 /* ---------- 场景渲染 ---------- */
 function camXY(){
@@ -113,6 +200,9 @@ function drawBattle(){
   const box=$('battle');
   if(!Battle.active){box.style.display='none';return;}
   box.style.display='block';
+  /* 水墨场景背景（按地图主题） */
+  const bs=$('bscene');
+  if(bs&&bs.width)paintInk(bs.getContext('2d'),bs.width,bs.height,frame/30,battlePal(),false);
   /* 敌人立绘 */
   const fc=$('bfoecv'),fx=fc.getContext('2d');
   fx.clearRect(0,0,128,128);
@@ -309,6 +399,7 @@ function fade(out){const f=$('fade');f.style.opacity=out?'0':'1';}
 /* ---------- 主循环 ---------- */
 function loop(){
   frame++;
+  if(Game.mode==='title'){const tc=$('tcv');if(tc&&tc.width)paintInk(tc.getContext('2d'),tc.width,tc.height,frame/30,PAL_DEF,true);}
   if(Eng.map){
     if(Game.mode==='field'&&!Battle.active&&frame%24===0)Eng.updateFoes();
     drawScene();
@@ -342,6 +433,8 @@ Game.shopBuy2=function(id){
   Game.save();
 };
 
-bindPad();bindTitle();loop();
+bindPad();bindTitle();
+setTimeout(()=>fade(1),400); /* 开机揭幕：黑→水墨标题 */
+loop();
 window.UI={openMenu,closeMenu,openSub,closeSub,openShop,cloudList,fade};
 })();

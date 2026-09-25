@@ -9,6 +9,7 @@
 <title>西游·大圣传 — 回合制RPG</title>
 <style>
 :root{--gold:#f4c430;--panel:#14101f;--frame:#f4c430;}
+@font-face{font-family:"KaiBrush";src:url("kai.woff2") format("woff2");font-display:block;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
 html,body{width:100%;height:100%;overflow:hidden;background:#0a0812;font-family:"PingFang SC","Microsoft YaHei",sans-serif;touch-action:none;}
 #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0a0812;}
@@ -33,25 +34,26 @@ canvas#game{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
 #goldbox{background:rgba(10,8,20,.82);border:2px solid var(--gold);border-radius:5px;padding:5px 10px;color:var(--gold);font-size:12px;font-weight:700;}
 /* ---------- 通用菜单面板 ---------- */
 .panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(12,9,22,.96);border:3px solid var(--gold);border-radius:8px;padding:16px 20px;z-index:40;min-width:230px;max-width:86%;box-shadow:0 6px 32px rgba(0,0,0,.7);display:none;}
-.panel h3{color:var(--gold);font-size:16px;margin-bottom:10px;text-align:center;letter-spacing:2px;}
+.panel h3{color:var(--gold);font-family:KaiBrush;font-size:19px;letter-spacing:.3em;padding-left:.3em;margin-bottom:10px;text-align:center;}
 .menu-item{padding:8px 12px;margin:4px 0;border:2px solid #4a3f22;border-radius:5px;color:#e8e0cc;font-size:14px;cursor:pointer;}
 .menu-item.sel{border-color:var(--gold);color:var(--gold);background:rgba(244,196,48,.1);}
 .stat-row{display:flex;justify-content:space-between;color:#d8d0b8;font-size:13px;padding:3px 4px;}
 .stat-row b{color:#fff;}
-/* ---------- 战斗界面 ---------- */
+/* ---------- 战斗界面（水墨背景 + 大立绘） ---------- */
 #battle{position:absolute;inset:0;display:none;z-index:25;background:#000;}
-#bfoe{position:absolute;left:50%;top:12%;transform:translateX(-50%);text-align:center;}
-#bfoe canvas{image-rendering:pixelated;}
-#bfoename{color:#ff9c8a;font-size:14px;font-weight:700;text-shadow:1px 1px 0 #000;margin-top:2px;}
-#bfoehp{width:130px;height:7px;background:#301414;border:1px solid #000;border-radius:4px;margin:4px auto 0;overflow:hidden;}
+#bscene{position:absolute;inset:0;width:100%;height:100%;}
+#bfoe{position:absolute;left:50%;top:13%;transform:translateX(-50%);text-align:center;z-index:1;}
+#bfoe canvas{image-rendering:pixelated;width:min(56vw,300px);height:auto;filter:drop-shadow(0 10px 18px rgba(0,0,0,.65));}
+#bfoename{color:#ffd9c0;font-family:KaiBrush;font-size:20px;letter-spacing:.2em;text-shadow:0 2px 6px #000,0 0 14px rgba(0,0,0,.8);margin-top:4px;}
+#bfoehp{width:min(50vw,240px);height:7px;background:rgba(20,6,6,.8);border:1px solid #000;border-radius:4px;margin:6px auto 0;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.6);}
 #bfoehp i{display:block;height:100%;background:linear-gradient(#ff7a5c,#c02a1a);}
 #bflash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:26;}
-#blog{position:absolute;left:4%;right:4%;top:44%;height:20%;color:#f0ead8;font-size:14px;line-height:1.6;text-shadow:1px 1px 0 #000;overflow:hidden;}
-#bmenu{position:absolute;left:4%;right:4%;bottom:20%;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
-#bmenu div{flex:1 1 40%;text-align:center;padding:9px 4px;border:2px solid var(--gold);border-radius:6px;background:rgba(20,14,36,.9);color:var(--gold);font-size:14px;font-weight:700;cursor:pointer;}
-#bmenu div:active{background:rgba(244,196,48,.25);}
+#blog{position:absolute;left:5%;right:5%;top:47%;height:18%;color:#f0ead8;font-size:15px;line-height:1.7;text-shadow:1px 1px 2px #000,0 0 10px rgba(0,0,0,.9);overflow:hidden;z-index:1;}
+#bmenu{position:absolute;left:5%;right:5%;bottom:23%;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;z-index:1;}
+#bmenu div{flex:1 1 38%;text-align:center;padding:10px 4px;border:1.5px solid var(--gold);border-radius:6px;background:rgba(10,8,20,.68);color:var(--gold);font-family:KaiBrush;font-size:19px;letter-spacing:.25em;cursor:pointer;backdrop-filter:blur(1px);}
+#bmenu div:active{background:rgba(244,196,48,.28);}
 #bmenu div.dim{opacity:.35;}
-#bstat{position:absolute;left:4%;bottom:6%;right:4%;background:rgba(10,8,20,.9);border:2px solid var(--gold);border-radius:6px;padding:6px 12px;display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:12px;font-weight:700;}
+#bstat{position:absolute;left:5%;bottom:7%;right:5%;background:rgba(10,8,20,.72);border:1.5px solid var(--gold);border-radius:6px;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:12.5px;font-weight:700;z-index:1;}
 /* ---------- 虚拟按键 ---------- */
 #pad{position:absolute;inset:0;z-index:22;display:none;}
 #dpad{position:absolute;left:3%;bottom:16%;width:150px;height:150px;}
@@ -60,13 +62,19 @@ canvas#game{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
 #dU{left:50px;top:0;}#dD{left:50px;top:100px;}#dL{left:0;top:50px;}#dR{left:100px;top:50px;}
 #btnA{position:absolute;right:5%;bottom:22%;width:62px;height:62px;border-radius:50%;background:rgba(212,61,42,.25);border:2px solid rgba(244,196,48,.7);color:#ffd9a0;font-size:15px;font-weight:900;display:flex;align-items:center;justify-content:center;}
 #btnB{position:absolute;right:17%;bottom:13%;width:48px;height:48px;border-radius:50%;background:rgba(58,110,165,.25);border:2px solid rgba(120,170,255,.6);color:#bcd8ff;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;}
-/* ---------- 过场/标题 ---------- */
-#title{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 35%,#2a1a48 0%,#0a0812 70%);}
-#title h1{color:var(--gold);font-size:38px;letter-spacing:6px;text-shadow:0 0 24px rgba(244,196,48,.5),3px 3px 0 #000;margin-bottom:6px;}
-#title h2{color:#c8b890;font-size:15px;letter-spacing:4px;margin-bottom:34px;}
-#title .topt{color:#e8e0cc;font-size:16px;padding:10px 38px;border:2px solid var(--gold);border-radius:8px;margin:7px 0;cursor:pointer;font-weight:700;}
-#title .topt:active{background:rgba(244,196,48,.2);}
-#title .ver{position:absolute;bottom:12px;color:#5a5470;font-size:11px;}
+/* ---------- 过场/标题（仙剑一·水墨夜山） ---------- */
+#title{position:absolute;inset:0;z-index:50;overflow:hidden;background:#0a0e1e;}
+#tcv{position:absolute;inset:0;width:100%;height:100%;}
+#tside{position:absolute;right:8%;top:7%;display:flex;flex-direction:column;align-items:center;gap:16px;z-index:1;animation:titleIn 1.4s ease-out both .3s;}
+#tvtitle{writing-mode:vertical-rl;font-family:KaiBrush;font-size:min(11vw,46px);color:#ede2c4;letter-spacing:.3em;text-shadow:0 2px 12px rgba(0,0,0,.9),0 0 26px rgba(0,0,0,.5);line-height:1.25;}
+#tseal{writing-mode:vertical-rl;font-family:KaiBrush;background:#a8271e;color:#f6ecd8;font-size:15px;letter-spacing:.22em;padding:9px 5px;border-radius:3px;box-shadow:0 3px 10px rgba(0,0,0,.55);transform:rotate(2.5deg);}
+#tmenu{position:absolute;left:50%;bottom:19%;transform:translateX(-50%);display:flex;flex-direction:column;gap:16px;align-items:center;z-index:1;animation:titleIn 1.4s ease-out both .8s;}
+#title .topt{font-family:KaiBrush;font-size:23px;color:#d8ceb2;letter-spacing:.4em;padding-left:.4em;border:none;background:transparent;text-shadow:0 2px 8px #000;cursor:pointer;}
+#title .topt:active{color:var(--gold);text-shadow:0 0 18px rgba(244,196,48,.65);}
+#title .ver{position:absolute;bottom:12px;left:0;right:0;text-align:center;color:rgba(200,195,220,.4);font-size:11px;z-index:1;animation:titleIn 1.6s ease-out both 1.2s;}
+#tmenu{animation-name:titleInC;}
+@keyframes titleIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+@keyframes titleInC{from{opacity:0;transform:translateX(-50%) translateY(14px);}to{opacity:1;transform:translateX(-50%);}}
 #fade{position:absolute;inset:0;background:#000;opacity:1;pointer-events:none;z-index:60;transition:opacity .5s;}
 #toast{position:absolute;left:50%;top:16%;transform:translateX(-50%);background:rgba(10,8,20,.92);border:2px solid var(--gold);color:var(--gold);border-radius:6px;padding:8px 18px;font-size:14px;font-weight:700;z-index:55;display:none;white-space:nowrap;}
 #touchstart{position:absolute;inset:0;z-index:21;}
@@ -80,6 +88,7 @@ canvas#game{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
     <div id="goldbox">💰 <span id="goldv">0</span>　🗺 <span id="mapname"></span></div>
   </div>
   <div id="battle">
+    <canvas id="bscene"></canvas>
     <div id="bfoe"><canvas id="bfoecv" width="128" height="128"></canvas><div id="bfoename"></div><div id="bfoehp"><i></i></div></div>
     <div id="blog"></div><div id="bmenu"></div>
     <div id="bstat"></div>
@@ -93,10 +102,13 @@ canvas#game{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
   <div id="sysmenu" class="panel"><h3>sys_menu</h3><div id="syslist"></div></div>
   <div id="submenu" class="panel"><h3 id="subh"></h3><div id="sublist"></div></div>
   <div id="title">
-    <h1>大圣传</h1><h2>西 游 · 第 一 回</h2>
-    <div class="topt" id="tnew">新的旅程</div>
-    <div class="topt" id="tcont" style="display:none">继续冒险</div>
-    <div class="ver">像素回合制RPG · v1.0 · 离线可玩</div>
+    <canvas id="tcv"></canvas>
+    <div id="tside"><div id="tvtitle">西游大圣传</div><div id="tseal">齐天</div></div>
+    <div id="tmenu">
+      <div class="topt" id="tnew">新的旅程</div>
+      <div class="topt" id="tcont" style="display:none">继续冒险</div>
+    </div>
+    <div class="ver">像素回合制RPG · v1.0.1 · 离线可玩</div>
   </div>
   <div id="toast"></div>
   <div id="fade"></div>
