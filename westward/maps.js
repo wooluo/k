@@ -1,0 +1,961 @@
+/* maps.js — 西游大世界地图（字符画，每字符=16px tile）
+   图例: .草 ,深草(遇敌) "花 :路 T树 P桃树 ~水 =瀑布 #山石 s沙 o礁 B桥
+         W洞壁 f火把 _洞地 t石桌 S王座 J金箍棒 L生死簿 p宫砖 w白玉
+         R城墙 h屋顶 d门 G鬼火 x枯木 c珊瑚 q珠 n竹 *石卵 !旗 m蘑菇 e老树 */
+'use strict';
+const MAPS={};
+/* ================= 花果山 64×64 ================= */
+MAPS.huaguo={
+  name:'花果山',w:64,h:64,
+  rows:[
+"################################################################",
+"################################################################",
+"####################,,,,,,,,#####################*#############",
+"###############,,,,#########,,,,,################..#############",
+"############,,,,,,,,,,####,,,,,,,,,,,##########....*############",
+"###########,,,###,,####,,##,,,,,,####,,,,#####....*....#########",
+"##########,,,,,,,##,,##,,##,,,,,,,##,,,,,###..*..*.....#########",
+"###########,,####,,,##,,,###,,,,####,,,###....*....,..#########",
+"########,,,,,####,,,,##,,,,####,,,,##,...##..,,,.....,..########",
+"#######,,,,#######,,,##,,,####,,,###..,...#....,..,...,..#######",
+"######,,,,########,,,,##,,,,###,,##..,..##..,...,..,...,.#######",
+"#####,,,,##########,,,##,,,##,,##..,..#.....,..,...,..,,.#######",
+"####,,,,####PPPP####,,,##,,#,,#...,...#..,...,..,....,,,.#######",
+"###,,,,##PPPPPPPPPP##,,,#,,..,..,...##..,...,..,....,,,,########",
+"###,,,##PPPPPPPPPPPP##,,,,..,..,...#..,....,..,...,,,,##########",
+"##,,,,#PPPPPPPPPPPPPP#,,..,..,...##....,...,..,..,,,,###########",
+"##,,,#PPPPPPPPPPPPPPPP#,..,..,..,...,...,..,...,,,,#############",
+"##,,,#PPPPPP.PPPPP.PPP#...,..,...,...,..,...,,,,################",
+"##,,,#PPPP....P.....PPP#..,..,...,..,...,..,,,##################",
+"##,,,,PPP.....P.P....PP#,..,...,...,..,...,,,,##################",
+"##,,,,PPP....PP.PP...PP#...,...,..,...,..,,,####################",
+"##,,,,#PP....P..P.P..PP#..,...,...,..,...,,,####################",
+"##,,,,##PP...PP.PP.P.P##...,...,..,...,...,,####################",
+"###,,,,###PP.P.P.P.P##...,..,...,..,...,..,,,###################",
+"###,,,,####PP..P..###...,..,...,...,..,...,,,###################",
+"####,,,,#####PP####...,..,...,..,...,...,,,#####################",
+"#####,.,,,,######....,...,..,...,...,..,,,######################",
+"######..,....,,,,#....,...,...,..,...,..,,,#####################",
+"######........,,,#.,..,...,...,..,...,...,,,####################",
+"#######..##....,,,....,...,..,...,...,..,,,#####################",
+"########..###..,,#..,...,...,...,..,...,..,,,###################",
+"#########..###..,,...,..,...,...,..,...,..,,:,,,#################",
+"##########..###..#....,...,...,...,..,...,,:::,,#################",
+"###########..###.....,...,...,...,..,...,,::::,,#################",
+"############..##..##..,...,...,..,...,..,::::::,,################",
+"#############..#..###.....,..,...,..,...,::::,,,#################",
+"##############...####..#....,...,...,..,:::,,,###################",
+"###############...###..###....,..,...,..::,,,,###################",
+"################..##..####....,...,...,:,,,,####################",
+"#################.#..#####..#....,..,,:::,,,#####################",
+"##################..######..###..,...::,,,,######################",
+"###################.#######..###..,,,::,,,#######################",
+"####################d#######..###..,,::,,########################",
+"###################..########..###.,,,,,#########################",
+"###################..#########.###..,,,##########################",
+"###################..###########.###.,,##########################",
+"##################...#############.##..##########################",
+"##################...###############.#..#########################",
+"#################....#################...########################",
+"#################..###################....#######################",
+"################..#####################....######################",
+"###############..#######################....#####################",
+"##############...#########################....###################",
+"#############...###############################.#################",
+"#############...#################################.###############",
+"############....###################################..############",
+"###########....#####################################..###########",
+"##########....#######################RRRRR############..#########",
+"##########...########################Rd:::R############.#########",
+"#########...#########################R::::R############.#########",
+"#########...##########################::::##############.########",
+"#########...###########################:::##############..#######",
+"#########...############################::d#############..#######",
+"#########...##############################:##############..######",
+"###########..########################################################",
+"########################################################################"
+  ],
+  exits:[
+    {x:42,y:42,to:'backhill',tx:15,ty:36,label:'后山秘径'},
+    {x:44,y:58,to:'aolai',tx:23,ty:44,label:'傲来国'}
+  ],
+  npcs:[
+    {x:12,y:30,spr:'elder',face:'down',dlg:'elder',move:false},
+    {x:10,y:33,spr:'monkey',face:'down',dlg:'mk_a',move:true},
+    {x:14,y:35,spr:'monkey',face:'down',dlg:'mk_b',move:true},
+    {x:11,y:22,spr:'smallmk',face:'down',dlg:'mk_kid',move:true},
+    {x:17,y:20,spr:'smallmk',face:'right',dlg:'mk_kid2',move:false},
+    {x:9,y:27,spr:'monkey',face:'right',dlg:'mk_c',move:false},
+    {x:40,y:35,spr:'monkey',face:'down',dlg:'mk_train',move:true},
+    {x:45,y:37,spr:'smallmk',face:'down',dlg:'mk_train2',move:false},
+    {x:47,y:33,spr:'monkey',face:'left',dlg:'mk_guard',move:false}
+  ],
+  encounter:{rate:0.10,mobs:['wolf','wolf','shanxiao']},
+  start:{x:31,y:4}
+};
+/* ================= 水帘洞 40×30 ================= */
+MAPS.shuilian={
+  name:'水帘洞',w:40,h:30,
+  rows:[
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWWWWWWWWWfWWWWWWWWWWWWWWWWfWWWWWWWWW",
+"WWWWWWWWW__WWWWWWWWWWWWWWWW__WWWWWWWW",
+"WWWWWWWW___WWWWWWWWWWWWWW___WWWWWWWW",
+"WWWWWWW______WWWWWWWWWW______WWWWWWW",
+"WWWWWW________WWWWWWWW________WWWWWW",
+"WWWWW___________WWWW___________WWWWW",
+"WWWW_____________WW____________WWWWW",
+"WWW____tt_______________________WWWW",
+"WWW____tt______WWWWWW__________WWWWW",
+"WWWW___________W____W____________WWW",
+"WWWW___________W____W____________WWW",
+"WWW____________W____W____________WWW",
+"WWW____________WW__WW____________WWW",
+"WWWW____________________________WWWW",
+"WWWWW_________t______t_________WWWWW",
+"WWWWWW________ttttttt________WWWWWWW",
+"WWWWW_________t______t_________WWWWW",
+"WWWW__________t______t__________WWWW",
+"WWW_______________________________WW",
+"WWW_______________________________WW",
+"WWWW__________~~~~~~~~~__________WWW",
+"WWWWW________~~~~~___~~~~~_______WWW",
+"WWWWWW________~~~_____~~~______WWWWW",
+"WWWWWWW________________________WWWWWW",
+"WWWWWWW________________________WWWWWW",
+"WWWWWWWW______________________WWWWWWW",
+"WWWWWWWWW____________________WWWWWWWW",
+"WWWWWWWWWWWWWW__dd__WWWWWWWWWWWWWWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+  ],
+  exits:[{x:16,y:28,to:'huaguo',tx:32,ty:8,label:'花果山'},{x:17,y:28,to:'huaguo',tx:32,ty:8,label:'花果山'}],
+  npcs:[
+    {x:12,y:8,spr:'monkey',face:'down',dlg:'sl_mk1',move:true},
+    {x:27,y:9,spr:'monkey',face:'left',dlg:'sl_mk2',move:false},
+    {x:20,y:14,spr:'smallmk',face:'up',dlg:'sl_mk3',move:true},
+    {x:20,y:16,spr:'S',face:'down',dlg:'',move:false,chair:true}
+  ],
+  encounter:null
+};
+/* ================= 后山秘径 32×40 ================= */
+MAPS.backhill={
+  name:'后山秘径',w:32,h:40,
+  rows:[
+"################################",
+"################################",
+"###,,,,,,,,,####################",
+"##,,,,,,,,,,,###################",
+"##,,,,,x,,,,,,##################",
+"##,,,,,,,,,,,,,#################",
+"###,,,,,x,,,,,,,################",
+"####,,,,,,,,,,,,,###############",
+"#####,,,,,,,x,,,,,##############",
+"######,,,,,,,,,,,,,,############",
+"#######,,,,,,,,,,,,,,###########",
+"########,,,,,x,,,,,,,###########",
+"#########,,,,,,,,,,,,,,#########",
+"##########,,,,,,,,,,,,,#########",
+"###########,,,,,,,,,,,,#########",
+"############,,,,x,,,,,##########",
+"#############,,,,,,,,,##########",
+"##############,,,,,,,###########",
+"###############,,,,,,###########",
+"################,,,,,###########",
+"#################,,,,###########",
+"##################,,,###########",
+"###################,,###########",
+"####################,###########",
+"#####################,##########",
+"######################,#########",
+"#######################,########",
+"########################,#######",
+"#########################,######",
+"##########################,#####",
+"###########################d####",
+"################################",
+"################################",
+"#########WWWWWWWWWWW############",
+"#########W_________W############",
+"#########W_________W############",
+"#########W____t____W############",
+"#########W_________W############",
+"#########WWWW__WWWWW############",
+"################################"
+  ],
+  exits:[{x:27,y:30,to:'huaguo',tx:44,ty:44,label:'花果山'}],
+  npcs:[{x:15,y:35,spr:'mowangNPC',face:'down',dlg:'mowang_talk',move:false,foeart:'mowang'}],
+  encounter:{rate:0.16,mobs:['wolf','shanxiao','shanxiao']}
+};
+/* ================= 傲来国 48×48 ================= */
+MAPS.aolai={
+  name:'傲来国',w:48,h:48,
+  rows:[
+"################################################",
+"################################################",
+"################################################",
+"################################################",
+"################RRRRRRRRRRRRRRRR################",
+"################RddddddddddddddR################",
+"################R::::::::::::::R################",
+"################R::hhhh::hhhh::R################",
+"##########,,,,#R::hhdhh::hhdhh:R#,,,,###########",
+"##########,,,,#R::hhdhh::hhdhh:R#,,,,###########",
+"#########,,,,,#R:::dd:::::dd:::R#,,,,###########",
+"########,,,,,,,R::::::::::::::R,,,,,,##########",
+"#######,,,,,,,,R::::::::::::::R,,,,,,,,#########",
+"######,,,,,,,,,RRRRRRR::RRRRRRR,,,,,,,,,########",
+"#####,,,,,,,,,,,,,,,::::::::,,,,,,,,,,,#########",
+"####,,,,,,,,,,,,,::::::::::::,,,,,,,,,,,,#######",
+"####,,,,,,,,,,,,::::::::::::::,,,,,,,,,,,,######",
+"####,,,,,,,,,,,:::::::::::::::,,,,,,,,,,,,######",
+"####,,,####,,,,::::::::::::::::,,,,####,,,,#####",
+"####,,######,,::::::::::::::::::,,######,,######",
+"####,,######,,::::::::::::::::::,,######,,######",
+"####,,######,,::::!!!!!!!!::::::,######,,######",
+"####,,,####,,,,::::::::::::::::,,,,####,,,,#####",
+"####,,,,,,,,,,,:::::::::::::::,,,,,,,,,,,,######",
+"####,,,,,,,,,,,,::::::::::::,,,,,,,,,,,,,#######",
+"####,,,,,,,,,,,,,::::::::::,,,,,,,,,,,,#########",
+"#####,,,,,,,,,,,,,::::::::,,,,,,,,,,,,##########",
+"######,,,,,,,,,,,,,::::::,,,,,,,,,,,,###########",
+"#######,,,,,,,,,,,,:::::,,,,,,,,,,,,############",
+"########,,,,,,,,,,,,,::,,,,,,,,,,,,#############",
+"#########,,,,,,,,,,,,:,,,,,,,,,,,,##############",
+"##########,,,,,,,,,,,,,,,,,,,,,#################",
+"###########,,,,,,,,,,,,,,,,,,,##################",
+"############,,,,,,,,,,,,,,,,,###################",
+"#############,,,,,,,,,,,,,,,####################",
+"##############,,,,,,,,,,,,,#####################",
+"###############,,,,,,,,,,,######################",
+"################,,,,,,,,,,######################",
+"#################,,,,,,,########################",
+"##################,,,,,#########################",
+"###################,,,##########################",
+"####################:###########################",
+"###################:::##########################",
+"##################:::::#########################",
+"#################::::::#########################",
+"#################::::::#########################",
+"################d::::::d########################",
+"#################:d:::d:#########################",
+"#################:::d:::#########################"
+  ],
+  exits:[
+    {x:17,y:46,to:'coast',tx:20,ty:3,label:'东海之滨'},
+    {x:22,y:46,to:'coast',tx:20,ty:3,label:'东海之滨'},
+    {x:23,y:46,to:'huaguo',tx:45,ty:59,label:'花果山'},
+    {x:24,y:46,to:'huaguo',tx:45,ty:59,label:'花果山'}
+  ],
+  npcs:[
+    {x:22,y:7,spr:'guard',face:'down',dlg:'al_guard1',move:false},
+    {x:25,y:7,spr:'guard',face:'down',dlg:'al_guard2',move:false},
+    {x:20,y:10,spr:'merch',face:'down',dlg:'merch',move:false,shop:true},
+    {x:27,y:10,spr:'civilf',face:'left',dlg:'al_lady',move:true},
+    {x:22,y:15,spr:'civil',face:'down',dlg:'al_man',move:true},
+    {x:26,y:15,spr:'civil',face:'down',dlg:'al_man2',move:true},
+    {x:22,y:21,spr:'guard',face:'down',dlg:'al_guard3',move:false},
+    {x:25,y:21,spr:'guard',face:'down',dlg:'al_guard4',move:false},
+    {x:16,y:17,spr:'civilf',face:'right',dlg:'al_lady2',move:false},
+    {x:29,y:17,spr:'civil',face:'left',dlg:'al_man3',move:false}
+  ],
+  encounter:null
+};
+/* ================= 东海之滨 40×40 ================= */
+MAPS.coast={
+  name:'东海之滨',w:40,h:40,
+  rows:[
+"########################################",
+"##########,,,,,,,,,####################",
+"########,,,,,,,,:::::,,,,##############",
+"#######,,,,,,,:::::::::,,,,############",
+"######,,,,,,,::::::::::::,,,,##########",
+"#####,,,,,,,::::::::::::::,,,,#########",
+"####,,,,,,,,:::::::::,,,,,,,###########",
+"####,,,,,,,::::::::,,,,,,,,############",
+"###,,,,,,,::::::::,,,,,,,,,,###########",
+"###,,,,,,:::::::::,,,,,,,,,,###########",
+"##,,,,,,,::::::::,,,,,,,,,,,,##########",
+"##,,,,,,,::::::,,,,,,,,,,,,,,##########",
+"##,,,,,,,:::::,,,,,,,,,,,,,,,##########",
+"##,,,,,,,,::::,,,,,,,,,,,,,,,##########",
+"##,,,,,,,,,::,,,,,,,,,,,,,,,###########",
+"###,,,,,,,,:::::::::,,,,,,,############",
+"####sssss,::::::::::::,,,,,,###########",
+"#####ssssss::::::::::,,,,,,############",
+"######ssssss:::::::::,,,,,,############",
+"#######ssssss::::::::,,,,,,############",
+"########ssssss::::::,,,,,,,############",
+"#########ssssss:::::,,,,,,,############",
+"##########ssssss:::,,,,,,,,############",
+"###########ssssss::,,,,,,,,###########",
+"############sssssss,,,,,,,,###########",
+"#############ssssss,,,,,,,,###########",
+"##############ssssssssss,#############",
+"###############ssssssssss##############",
+"################sssssssssss############",
+"#################ssssssssssss##########",
+"##################sssoossssssss########",
+"###################sss~~ssssssss#######",
+"####################s~~~~~sssssss######",
+"####################s~~~~~~ssssss######",
+"#####################~~~~~~~ssss#######",
+"######################~~~~~~~~s########",
+"#######################~~~~~~~#########",
+"########################~~~~###########",
+"#########################~#############",
+"########################################"
+  ],
+  exits:[{x:20,y:3,to:'aolai',tx:19,ty:47,label:'傲来国'},{x:21,y:3,to:'aolai',tx:19,ty:47,label:'傲来国'}],
+  npcs:[
+    {x:14,y:19,spr:'fisher',face:'down',dlg:'fisher',move:true},
+    {x:24,y:21,spr:'turtle',face:'up',dlg:'turtle',move:false},
+    {x:17,y:24,spr:'fisher',face:'right',dlg:'fisher2',move:false}
+  ],
+  encounter:{rate:0.08,mobs:['wolf','shanxiao']}
+};
+/* ================= 东海龙宫 48×48 ================= */
+MAPS.palace={
+  name:'东海龙宫',w:48,h:48,
+  rows:[
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWffffffffffffffffffffffffffffffffffffffffffWW",
+"WWppppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppSSSSSpppppppppppppppppppWW",
+"WWpppppppppppppppppS___SpppppppppppppppppppWW",
+"WWpppppppppppppppppS___SpppppppppppppppppppWW",
+"WWpppppppppppppppppS___SpppppppppppppppppppWW",
+"WWpppppppppppppppppS___SpppppppppppppppppppWW",
+"WWpppppppppppppppppSSSSSpppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppqqpppppppppppppppppppppppppppqqpppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppqqpppppppppppqqpppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWccccpppppppppppppppppppppppppppppppppccccWW",
+"WWccccpppppppppppppppppppppppppppppppppccccWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWccccpppppppppppppppppppppppppppppppppccccWW",
+"WWccccpppppppppppppppppppppppppppppppppccccWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWpppppppppppppppppppppppppppppppppppppppppWW",
+"WWWWWWWWWWWWWWWWWWWW___WWWWWWWWWWWWWWWWWWWWWW",
+"WWWWWWWWWWWWWWWWWWW___WWWWWWWWWWWWWWWWWWWWWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+  ],
+  exits:[{x:21,y:47,to:'coast',tx:26,ty:34,label:'东海之滨'},{x:22,y:47,to:'coast',tx:26,ty:34,label:'东海之滨'}],
+  npcs:[
+    {x:24,y:10,spr:'dragonk',face:'down',dlg:'dragonking',move:false},
+    {x:20,y:4,spr:'shrimp',face:'down',dlg:'pg_shrimp',move:false},
+    {x:28,y:4,spr:'crab',face:'down',dlg:'pg_crab',move:false},
+    {x:24,y:3,spr:'J',face:'down',dlg:'',move:false,pillar:true},
+    {x:10,y:24,spr:'shrimp',face:'right',dlg:'pg_shrimp2',move:false},
+    {x:14,y:38,spr:'crab',face:'right',dlg:'pg_crab2',move:false},
+    {x:36,y:24,spr:'shrimp',face:'left',dlg:'pg_shrimp3',move:false},
+    {x:32,y:38,spr:'crab',face:'left',dlg:'pg_crab3',move:false}
+  ],
+  encounter:null
+};
+/* ================= 幽冥地府 40×48 ================= */
+MAPS.hell={
+  name:'幽冥地府',w:40,h:48,
+  rows:[
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWxxxxxWWWWWWWWWWWWWWWWWWWWWWWxxxxxWW",
+"WWx_______________________________xWW",
+"WWx________________________________xW",
+"WW___G______________________G_____xWW",
+"WW__________________________________W",
+"WW__________________________________W",
+"WW____x________________________x____W",
+"WW___________________________________W",
+"WWW________LLLL____________________WWW",
+"WWW_______LL______________________WWW",
+"WWWW_______________________________WWW",
+"WW________x__________________x_____WW",
+"WW__________________________________W",
+"WW___G________________________G_____W",
+"WW___________________________________W",
+"WWWW_______________________________WWW",
+"WWW_______________________________WWWW",
+"WWWW_____________________________WWWWW",
+"WWWWW___________________________WWWWWW",
+"WWWWWW_________G_______________WWWWWW",
+"WWWWWW_________________________WWWWWW",
+"WWWWW___________________________WWWWW",
+"WWWW_____________x_____________WWWWW",
+"WWW_____________________________WWWW",
+"WW_______________________________WW",
+"WW______G_________________G______W",
+"WW_______________________________W",
+"WW_______________________________W",
+"WWW_____________________________WWW",
+"WWWW___________________________WWWW",
+"WWWWW_________________________WWWWW",
+"WWWWWW_____________________WWWWWW",
+"WWWWWWW___________________WWWWWWW",
+"WWWWWWWW_________________WWWWWWWW",
+"WWWWWWWWW_______________WWWWWWWWW",
+"WWWWWWWWWW_____________WWWWWWWWWW",
+"WWWWWWWWWWW___________WWWWWWWWWWW",
+"WWWWWWWWWWWW_________WWWWWWWWWWWW",
+"WWWWWWWWWWWWW___d___WWWWWWWWWWWWW",
+"WWWWWWWWWWWWWW___WWWWWWWWWWWWWWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWWWW_________________________WWWWW",
+"WWWW___________________________WWWW",
+"WWWW___________________________WWWW",
+"WWWW___________________________WWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+  ],
+  exits:[{x:18,y:38,to:'hell',tx:18,ty:43,label:'阎罗殿'}],
+  npcs:[
+    {x:10,y:9,spr:'oxhead',face:'down',dlg:'hl_ox',move:false},
+    {x:28,y:9,spr:'horsef',face:'down',dlg:'hl_horse',move:false},
+    {x:20,y:3,spr:'yanwang',face:'down',dlg:'yanwang',move:false,foeart:'yanwang'}
+  ],
+  encounter:{rate:0.12,mobs:['niutou','mamian']}
+};
+/* 阎罗殿（地府内殿） */
+MAPS.hellhall={
+  name:'阎罗殿',w:20,h:16,
+  rows:[
+"WWWWWWWWWWWWWWWWWWWW",
+"WWf______________fWW",
+"WW________________WW",
+"WW______LLLL______WW",
+"WW________________WW",
+"WW________________WW",
+"WW________________WW",
+"WW________________WW",
+"WW________________WW",
+"WW________________WW",
+"WW________________WW",
+"WW________________WW",
+"WWWWWWW__dd__WWWWWWW",
+"WWWWWWWWWWWWWWWWWWWW"
+  ],
+  exits:[{x:8,y:12,to:'hell',tx:18,ty:40,label:'幽冥地府'},{x:9,y:12,to:'hell',tx:18,ty:40,label:'幽冥地府'},{x:10,y:12,to:'hell',tx:18,ty:40,label:'幽冥地府'},{x:11,y:12,to:'hell',tx:18,ty:40,label:'幽冥地府'}],
+  npcs:[{x:9,y:3,spr:'L',face:'down',dlg:'',move:false,book:true}],
+  encounter:null
+};
+/* ================= 灵台方寸山 48×44 ================= */
+MAPS.fangcun={
+  name:'灵台方寸山',w:48,h:44,
+  rows:[
+"################################################",
+"####################KKKKKK######################",
+"###############KKAAAAAAAAAAKK###################",
+"##############KAAAAAAAAAAAAAAK##################",
+"##############KAAAAAAAAAAAAAAK##################",
+"###############KAAAAAAAAAAAAAK##################",
+"#################K..AAAA..K#####################",
+"###################:....:#######################",
+"##################,,::::,,######################",
+"################,,::::::::,,####################",
+"##############,,,:::::::::,,,###################",
+"#############,,,::::KK::::,,,###################",
+"############,,,:::KKKKKK:::,,,##################",
+"###########,,,:::KK....KK:::,,,#################",
+"##########,,,:::KK......KK:::,,,################",
+"#########,,,:::KK........KK:::,,,###############",
+"########,,,:::KK....::....KK:::,,,##############",
+"#######,,,:::KK....::::....KK:::,,,#############",
+"######,,,:::KK....::::::....KK:::,,,############",
+"####,,,:::KK....::::::::::....KK:::,,,##########",
+"###,,,:::KK....::::::::::::....KK:::,,,#########",
+"##,,,:::KK....::::::::::::::....KK:::,,,########",
+"##,,:::KK....::::KK......KK::::....KK:::,,,#####",
+"#,,:::KK....::::KK........KK::::....KK:::,,,####",
+"#,:::KK....::::KK..........KK::::....KK:::,,####",
+"#,::KK....::::KK....::::....KK::::....KK::,,####",
+"#,::K.....::::KK....::::....KK::::.....K::,,####",
+"#,::......::::KK....::::....KK::::......::,,####",
+"##,,::::::::::KK....::::....KK::::::::::,,,#####",
+"####::::::::::::KK........KK::::::::::::,,,,####",
+"######::::::::::::KK....KK::::::::::::,,,,,#####",
+"########:::::::::::::KK::::::::::::,,,,,,#######",
+"##########::::::::::::::::::::::::,,,,##########",
+"############::::::::::::::::::::::,,,,##########",
+"##############::::::::::::::::::::,,#############",
+"################:::::::::::::::::::,,############",
+"##################:::::::::::::::::,#############",
+"####################:::::::::::::::##############",
+"######################:::::::::::################",
+"########################:::::::##################",
+"##########################:::####################",
+"###########################d#####################",
+"##########################:d:####################",
+"##########################:::####################"
+  ],
+  exits:[
+    {x:27,y:40,to:'sanxing',tx:12,ty:16,label:'斜月三星洞',plot:0},
+    {x:24,y:41,to:'huaguo',tx:4,ty:31,label:'花果山',plot:0},
+    {x:25,y:41,to:'huaguo',tx:4,ty:31,label:'花果山',plot:0},
+    {x:23,y:41,to:'huaguo',tx:4,ty:31,label:'花果山',plot:0}
+  ],
+  npcs:[
+    {x:24,y:37,spr:'civil',face:'up',dlg:'fc_woodcutter',move:false},
+    {x:21,y:33,spr:'monkey',face:'right',dlg:'fc_mk1',move:true},
+    {x:30,y:34,spr:'monkey',face:'left',dlg:'fc_mk2',move:false}
+  ],
+  encounter:{rate:0.10,mobs:['wolf','shanxiao']}
+};
+/* ================= 斜月三星洞 26×20 ================= */
+MAPS.sanxing={
+  name:'斜月三星洞',w:26,h:20,
+  rows:[
+"WWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWf____________________fWW",
+"WW______________________WW",
+"WW______________________WW",
+"WW_________WWWW_________WW",
+"WW_________W__W_________WW",
+"WW______________________WW",
+"WW______________________WW",
+"WW___t___t____t___t_____WW",
+"WW______________________WW",
+"WW______________________WW",
+"WW______________________WW",
+"WW___t___t____t___t_____WW",
+"WW______________________WW",
+"WW______________________WW",
+"WWWW__________________WWWW",
+"WWWWW________________WWWWW",
+"WWWWWW____dddd______WWWWWW",
+"WWWWWWWWWW__WWWWWWWWWWWWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWW"
+  ],
+  exits:[
+    {x:11,y:17,to:'fangcun',tx:27,ty:41,label:'方寸山',plot:0},
+    {x:12,y:17,to:'fangcun',tx:27,ty:41,label:'方寸山',plot:0},
+    {x:13,y:17,to:'fangcun',tx:27,ty:41,label:'方寸山',plot:0},
+    {x:14,y:17,to:'fangcun',tx:27,ty:41,label:'方果山',plot:0}
+  ],
+  npcs:[
+    {x:12,y:5,spr:'puti',face:'down',dlg:'puti',move:false},
+    {x:7,y:9,spr:'civil',face:'down',dlg:'sx_d1',move:false},
+    {x:17,y:9,spr:'civil',face:'down',dlg:'sx_d2',move:false},
+    {x:7,y:13,spr:'civilf',face:'down',dlg:'sx_d3',move:false},
+    {x:17,y:13,spr:'civil',face:'down',dlg:'sx_d4',move:false}
+  ],
+  encounter:null
+};
+/* ================= 天宫 56×52 ================= */
+MAPS.tianing={
+  name:'天宫·南天门',w:56,h:52,
+  rows:[
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXKKKKKKKKKKKKKKKKKKKKKKKKKKKKXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXKEEEEEEEEEEEEEEEEEEEEEEEEEEEEKXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXKEEEEEEEEEEEEEEEEEEEEEEEEEEEEKXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXKEEEEEEEEEEEEEEEEEEEEEEEEEEEEKXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXKEEEEEEEEEEEEEEEEEEEEEEEEEEEEKXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXKEEEEEEEEEEEEEEEEEEEEEEEEEEEEKXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXKEEEEEEEEEEEEEEEEEEEEEEEEEEEEKXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXKKKKKKKKKKKKKKKKKKKKKKKKKKKKXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXddXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXOOOXXXXXXXXXXXXXXXXXXXOOOXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXOOOOOXXXXXXXXXXXXXXXXXOOOOOXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXOOOXXXXXXXXXXXXXXXXXXXOOOXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXOOOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXOOOXXXXXXX",
+"XXXXOOOOOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXOOOOOXXXXXX",
+"XXXXXOOOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXOOOXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXOOOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXOOOXXXXXXXXXX",
+"XXXXXXOOOOOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXOOOOOXXXXXXXXX",
+"XXXXXXXOOOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXOOOXXXXXXXXXX",
+"XXXXXXddXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXddXXXXX",
+"XXXXXX::XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX::XXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXOOOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXOOOXXXXXXXXXX",
+"XXXXXOOOOOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXOOOOOXXXXXXXXX",
+"XXXXXXOOOXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXOOOXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXOOOXXXXXXXXXXXXXXXXXXXOOOXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXOOOOOXXXXXXXXXXXXXXXXXOOOOOXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXOOOXXXXXXXXXXXXXXXXXXXOOOXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXKKKKKKKKKKKKKKKKXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXKK..........KK..KKXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXK..............KKXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXK..............KKXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXKK............KKKKXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXKK........KKKKXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXKKKKKKKKKKKXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXNNN......NNNXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXNNNNN....NNNNNXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXNNNNN....NNNNNXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  ],
+  exits:[
+    {x:21,y:50,to:'huaguo',tx:46,ty:60,label:'下界·花果山',plot:8},
+    {x:22,y:50,to:'huaguo',tx:46,ty:60,label:'下界·花果山',plot:8},
+    {x:27,y:50,to:'huaguo',tx:46,ty:60,label:'下界·花果山',plot:8},
+    {x:28,y:50,to:'huaguo',tx:46,ty:60,label:'下界·花果山',plot:8},
+    {x:6,y:25,to:'doulv',tx:12,ty:16,label:'兜率宫',plot:8},
+    {x:6,y:26,to:'doulv',tx:12,ty:16,label:'兜率宫',plot:8},
+    {x:49,y:25,to:'yaochi',tx:25,ty:11,label:'瑶池',plot:8},
+    {x:49,y:26,to:'yaochi',tx:25,ty:11,label:'瑶池',plot:8},
+    {x:50,y:9,to:'bimawen',tx:13,ty:16,label:'御马监',plot:8}
+  ],
+  npcs:[
+    {x:27,y:8,spr:'jadeemp',face:'down',dlg:'jadeemp',move:false},
+    {x:23,y:10,spr:'taibai',face:'down',dlg:'taibai2',move:false},
+    {x:31,y:10,spr:'tianbingNPC',face:'down',dlg:'tb1',move:false,foeart:'tianbing'},
+    {x:27,y:44,spr:'tianbingNPC',face:'down',dlg:'tb2',move:false,foeart:'tianbing'},
+    {x:29,y:44,spr:'tianbingNPC',face:'down',dlg:'tb3',move:false,foeart:'tianbing'},
+    {x:14,y:30,spr:'tianbingNPC',face:'right',dlg:'tb4',move:false,foeart:'tianbing'},
+    {x:41,y:30,spr:'tianbingNPC',face:'left',dlg:'tb5',move:false,foeart:'tianbing'}
+  ],
+  encounter:null
+};
+/* ================= 兜率宫 26×20 ================= */
+MAPS.doulv={
+  name:'兜率宫',w:26,h:20,
+  rows:[
+"WWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWf____________________fWW",
+"WW______________________WW",
+"WW______________________WW",
+"WW______________________WW",
+"WW_________U_____________WW",
+"WW________UUUU___________WW",
+"WW________UUUU___________WW",
+"WW________UUUU___________WW",
+"WW______________________WW",
+"WW______________________WW",
+"WW______t________t_______WW",
+"WW______________________WW",
+"WW______________________WW",
+"WW______________________WW",
+"WWWW__________________WWWW",
+"WWWWW________________WWWWW",
+"WWWWWW_____ddd_______WWWWW",
+"WWWWWWWWWW__WWWWWWWWWWWWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWW"
+  ],
+  exits:[
+    {x:11,y:17,to:'tianing',tx:8,ty:25,label:'天宫',plot:8},
+    {x:12,y:17,to:'tianing',tx:8,ty:25,label:'天宫',plot:8},
+    {x:13,y:17,to:'tianing',tx:8,ty:25,label:'天宫',plot:8}
+  ],
+  npcs:[
+    {x:12,y:4,spr:'laojun',face:'down',dlg:'laojun',move:false},
+    {x:7,y:11,spr:'civil',face:'right',dlg:'dl_tong1',move:false},
+    {x:18,y:11,spr:'civil',face:'left',dlg:'dl_tong2',move:false}
+  ],
+  encounter:null
+};
+/* ================= 御马监（弼马温府）28×20 ================= */
+MAPS.bimawen={
+  name:'御马监·弼马温府',w:28,h:20,
+  rows:[
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWf________________________fWW",
+"WW__________________________WW",
+"WW__MMMM______t_____MMMM____WW",
+"WW__MMMM_____________MMMM____WW",
+"WW__________________________WW",
+"WW__________________________WW",
+"WW__MMMM______t_____MMMM____WW",
+"WW__MMMM_____________MMMM____WW",
+"WW__________________________WW",
+"WW__________________________WW",
+"WW__________tttt_____________WW",
+"WW__________________________WW",
+"WW__________________________WW",
+"WWWWW___________________WWWWW",
+"WWWWWW_____ddddd_______WWWWWW",
+"WWWWWWWWWW__WWWWWWWWWWWWWWWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+"WWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+  ],
+  exits:[
+    {x:11,y:16,to:'tianing',tx:51,ty:10,label:'天宫',plot:8},
+    {x:12,y:16,to:'tianing',tx:51,ty:10,label:'天宫',plot:8},
+    {x:13,y:16,to:'tianing',tx:51,ty:10,label:'天宫',plot:8},
+    {x:14,y:16,to:'tianing',tx:51,ty:10,label:'天宫',plot:8}
+  ],
+  npcs:[
+    {x:14,y:5,spr:'guard',face:'down',dlg:'bw_jian',move:false},
+    {x:6,y:10,spr:'tianma',face:'right',dlg:'bw_ma1',move:false},
+    {x:21,y:10,spr:'tianma',face:'left',dlg:'bw_ma2',move:false},
+    {x:14,y:13,spr:'civil',face:'up',dlg:'bw_xiaoshi',move:false}
+  ],
+  encounter:null
+};
+/* ================= 瑶池 30×24 ================= */
+MAPS.yaochi={
+  name:'瑶池',w:30,h:24,
+  rows:[
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXOOOXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXOOOOOXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXOOOXXXXXXXXXXXXXXXXXX",
+"XXOOOXXXXXXXXXXXXXXXXXXXXOOXXX",
+"XOOOOOXXXXXXXXXXXXXXXXXXOOOXXX",
+"XXOOOXXXXXXXXXXXXXXXXXXXXOXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXIIIIIIIIIIIIIIIIIIIXXXXX",
+"XXXIIIIIIIIIIIIIIIIIIIIIIIXXX",
+"XXIIIIIIIIIIIIIIIIIIIIIIIIIXX",
+"XXIIIIIIIIIIIIIIIIIIIIIIIIIXX",
+"XXIIIIIIIIIIIIIIIIIIIIIIIIIXX",
+"XXIIIIIIIIIIIIIIIIIIIIIIIIIXX",
+"XXIIIIIIIIIIIIIIIIIIIIIIIIIXX",
+"XXXIIIIIIIIIIIIIIIIIIIIIIIXXX",
+"XXXXXIIIIIIIIIIIIIIIIIIIXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXOOOXXXXXXXXXXXXXXXXXXOOOXXX",
+"XOOOOOXXXXXXXXXXXXXXXXXOOOOXXX",
+"XXOOOXXXXXXXXXXXXXXXXXXXOOXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  ],
+  exits:[
+    {x:1,y:10,to:'tianing',tx:48,ty:26,label:'天宫',plot:8},
+    {x:1,y:11,to:'tianing',tx:48,ty:26,label:'天宫',plot:8},
+    {x:1,y:12,to:'tianing',tx:48,ty:26,label:'天宫',plot:8}
+  ],
+  npcs:[
+    {x:8,y:7,spr:'civilf',face:'down',dlg:'yc_fairy1',move:true},
+    {x:21,y:7,spr:'civilf',face:'down',dlg:'yc_fairy2',move:false},
+    {x:15,y:18,spr:'civilf',face:'up',dlg:'yc_fairy3',move:true}
+  ],
+  encounter:null
+};
+/* ================= 五指山 40×32 ================= */
+MAPS.wuzhi={
+  name:'五行山·五指峰',w:40,h:32,
+  rows:[
+"########################################",
+"########################################",
+"#################!:!:##################",
+"##################::###################",
+"###############V##::##V################",
+"###############VV#::#VV################",
+"###############VV#::#VV################",
+"###V###########VV#::#VV###########V####",
+"###VV##########VV#::#VV##########VV####",
+"###VV####V#####VV#::#VV#####V####VV####",
+"###VV###VV#####VV#::#VV####VV###VV####",
+"###VV###VV#####VV#::#VV####VV###VV####",
+"###VV###VV#####VV#::#VV####VV###VV####",
+"###VV###VV#####VV#::#VV####VV###VV####",
+"###VV###VV#####VV#::#VV####VV###VV####",
+"###VV###VV#####VV#::#VV####VV###VV####",
+"###VV###VV#####VV#::#VV####VV###VV####",
+"###VV###VV#####VV#::#VV####VV###VV####",
+"###VV###VV#####VV#::#VV####VV###VV####",
+"####V####V#####VV#::#VV####V####V#####",
+"##########V#####VV#::#VV####V#########",
+"#############V##VV#::#VV##V###########",
+"##############VVVV#::#VVVV############",
+"#################V#::#V###############",
+"##################::##################",
+"#################____#################",
+"################:____:################",
+"###############:______:###############",
+"##############:________:##############",
+"##############:________:##############",
+"###############________################",
+"################::::::#################"
+  ],
+  exits:[{x:18,y:30,to:'huaguo',tx:46,ty:60,label:'花果山（自由游历）',plot:14}],
+  npcs:[
+    {x:20,y:6,spr:'taibai',face:'down',dlg:'wz_taibai',move:false}
+  ],
+  encounter:null
+};
+/* 遇敌判定：可通行+深草 */
+const WALKABLE=new Set(['.',',','"',':','s','_','p','w','d','G','B','D','X','I','O','A','N','E','U','M','V']);
+const GRASS_TILES=new Set([',']);
+const PADCH={huaguo:'#',backhill:'#',aolai:'#',coast:'#',fangcun:'#',wuzhi:'#',
+             shuilian:'W',palace:'W',hell:'W',hellhall:'W',sanxing:'W',tianing:'X',doulv:'W',bimawen:'W',yaochi:'X'};
+/* 行宽归一化：pad/截断到声明宽，永不因手绘错位炸渲染 */
+Object.keys(MAPS).forEach(id=>{
+  const m=MAPS[id],pad=PADCH[id]||'#';
+  if(!pad||pad.length!==1)pad='#';
+  m.rows=m.rows.map(r=>r.length>m.w?r.slice(0,m.w):r.padEnd(m.w,pad[0]));
+  m.h=m.rows.length;
+});
+/* ================= 程序化修正层：瀑布/门户/落点/NPC 站位 ================= */
+const ST=(id,x,y,ch)=>{const m=MAPS[id];if(m.rows[y]&&x>=0&&x<m.w)m.rows[y]=m.rows[y].slice(0,x)+ch+m.rows[y].slice(x+1);};
+const STC=(id,x0,x1,y,ch)=>{for(let x=x0;x<=x1;x++)ST(id,x,y,ch);};
+const STV=(id,x,y0,y1,ch)=>{for(let y=y0;y<=y1;y++)ST(id,x,y,ch);};
+/* --- 花果山：北部开凿瀑布+水帘天池+沙滩（水帘洞入口） --- */
+STC('huaguo',29,34,2,'=');STC('huaguo',29,34,3,'=');STC('huaguo',30,33,4,'=');STC('huaguo',30,33,5,'=');
+STC('huaguo',30,33,6,'~');STC('huaguo',30,33,7,'~');STC('huaguo',29,34,8,'~');STC('huaguo',29,34,9,'s');
+ST('huaguo',29,9,'o');ST('huaguo',34,9,'o');
+/* --- 花果山：西门（→方寸山）--- */
+STV('huaguo',2,29,33,'d');STV('huaguo',3,29,33,':');STV('huaguo',4,29,33,':');
+STV('huaguo',1,29,33,'#');
+/* --- 花果山：西北后山门（→后山秘径）--- */
+ST('huaguo',41,42,'.');ST('huaguo',42,42,'d');ST('huaguo',43,42,'.');
+STC('huaguo',40,45,43,'.');STC('huaguo',40,45,44,'.');ST('huaguo',44,45,'.');
+/* --- 花果山：南门（→傲来国）+招安旗台（→天宫 plot8）--- */
+STC('huaguo',43,45,58,'.');ST('huaguo',44,58,'d');
+STC('huaguo',43,46,59,'.');STC('huaguo',43,46,60,'.');ST('huaguo',46,60,'.');ST('huaguo',44,59,'!');
+/* --- 花果山 NPC 站位 --- */
+ST('huaguo',12,30,'.');ST('huaguo',10,33,'.');ST('huaguo',17,20,'.');
+/* --- 后山秘径：回花果山的门 --- */
+STC('backhill',26,29,30,'d');STC('backhill',26,29,31,'.');
+/* --- 傲来国：南门走廊 + guard 挪位 --- */
+STC('aolai',17,23,45,':');STC('aolai',18,21,46,'.');STC('aolai',18,21,47,'.');
+ST('aolai',19,47,'d');ST('aolai',20,47,'d');
+ST('aolai',16,11,':');ST('aolai',33,11,':');ST('aolai',16,21,':');ST('aolai',33,21,':');
+(()=>{const mv={'22,7':[16,11],'25,7':[33,11],'22,21':[16,21],'25,21':[33,21]};MAPS.aolai.npcs.forEach(n=>{const k=n.x+','+n.y;if(mv[k]){n.x=mv[k][0];n.y=mv[k][1];n.move=false;}});})();
+/* --- 东海之滨：龙宫漩涡落点 --- */
+STC('coast',25,28,33,'s');STC('coast',25,28,34,'s');
+/* --- 龙宫：南门出口 --- */
+STC('palace',19,23,47,'_');
+/* --- 地府：阎罗殿走廊 --- */
+STV('hell',17,38,41,'_');STV('hell',18,38,41,'_');STV('hell',19,38,41,'_');STC('hell',16,20,39,'_');
+/* --- 天宫：南天门走道 + 玉帝站位 --- */
+STC('tianing',22,25,50,'X');ST('tianing',27,9,'X');
+/* --- 五指山：太白金星挪位 --- */
+(()=>{const t=MAPS.wuzhi.npcs[0];if(t){t.x=18;t.y=6;}})();
+/* --- 校验二轮修正：出生点避开瀑布/旗台让路/方寸山南门三连/玉帝出殿 --- */
+MAPS.huaguo.start={x:31,y:11};STC('huaguo',30,33,10,'.');STC('huaguo',30,33,11,'.');ST('huaguo',32,11,'*');ST('huaguo',33,11,'*');
+ST('huaguo',44,59,'.');ST('huaguo',45,59,'!');
+STC('fangcun',26,28,41,'d');
+(()=>{const j=MAPS.tianing.npcs.find(n=>n.spr==='jadeemp');if(j){j.y=9;}})();
+/* ================= 重建出口网（带 plot 门槛） ================= */
+MAPS.huaguo.exits=[
+  {x:31,y:9,to:'shuilian',tx:19,ty:28,label:'穿过瀑布·水帘洞',plot:1},
+  {x:32,y:9,to:'shuilian',tx:19,ty:28,label:'穿过瀑布·水帘洞',plot:1},
+  {x:42,y:42,to:'backhill',tx:28,ty:31,label:'后山秘径',plot:4},
+  {x:44,y:58,to:'aolai',tx:19,ty:46,label:'傲来国',plot:5},
+  {x:3,y:30,to:'fangcun',tx:27,ty:42,label:'西行·灵台方寸山',plot:2},
+  {x:3,y:31,to:'fangcun',tx:27,ty:42,label:'西行·灵台方寸山',plot:2},
+  {x:3,y:32,to:'fangcun',tx:27,ty:42,label:'西行·灵台方寸山',plot:2},
+  {x:44,y:60,to:'tianing',tx:23,ty:50,label:'驾云·天宫',plot:8}
+];
+MAPS.backhill.exits=[
+  {x:26,y:30,to:'huaguo',tx:42,ty:43,label:'花果山',plot:0},
+  {x:27,y:30,to:'huaguo',tx:42,ty:43,label:'花果山',plot:0},
+  {x:28,y:30,to:'huaguo',tx:42,ty:43,label:'花果山',plot:0},
+  {x:29,y:30,to:'huaguo',tx:42,ty:43,label:'花果山',plot:0}
+];
+MAPS.shuilian.exits=[
+  {x:17,y:28,to:'huaguo',tx:31,ty:10,label:'出洞·花果山',plot:0},
+  {x:18,y:28,to:'huaguo',tx:31,ty:10,label:'出洞·花果山',plot:0}
+];
+MAPS.aolai.exits=[
+  {x:19,y:46,to:'huaguo',tx:44,ty:59,label:'花果山',plot:0},
+  {x:20,y:46,to:'huaguo',tx:44,ty:59,label:'花果山',plot:0},
+  {x:18,y:47,to:'coast',tx:20,ty:3,label:'东海之滨',plot:5},
+  {x:21,y:47,to:'coast',tx:20,ty:3,label:'东海之滨',plot:5}
+];
+MAPS.coast.exits=[
+  {x:19,y:2,to:'aolai',tx:20,ty:45,label:'傲来国',plot:0},
+  {x:20,y:2,to:'aolai',tx:20,ty:45,label:'傲来国',plot:0},
+  {x:26,y:33,to:'palace',tx:21,ty:46,label:'跃入漩涡·东海龙宫',plot:5},
+  {x:27,y:33,to:'palace',tx:21,ty:46,label:'跃入漩涡·东海龙宫',plot:5}
+];
+MAPS.palace.exits=[
+  {x:19,y:47,to:'coast',tx:26,ty:32,label:'回东海之滨',plot:0},
+  {x:20,y:47,to:'coast',tx:26,ty:32,label:'回东海之滨',plot:0},
+  {x:21,y:47,to:'coast',tx:26,ty:32,label:'回东海之滨',plot:0}
+];
+MAPS.hell.exits=[
+  {x:18,y:41,to:'hellhall',tx:9,ty:11,label:'阎罗殿',plot:6},
+  {x:19,y:41,to:'hellhall',tx:9,ty:11,label:'阎罗殿',plot:6}
+];
+MAPS.hellhall.exits=[
+  {x:9,y:12,to:'hell',tx:18,ty:40,label:'幽冥地府',plot:0},
+  {x:10,y:12,to:'hell',tx:18,ty:40,label:'幽冥地府',plot:0}
+];
+MAPS.fangcun.exits=[
+  {x:19,y:6,to:'sanxing',tx:12,ty:16,label:'斜月三星洞',plot:0},
+  {x:20,y:6,to:'sanxing',tx:12,ty:16,label:'斜月三星洞',plot:0},
+  {x:26,y:41,to:'huaguo',tx:4,ty:31,label:'花果山',plot:0},
+  {x:27,y:41,to:'huaguo',tx:4,ty:31,label:'花果山',plot:0},
+  {x:28,y:41,to:'huaguo',tx:4,ty:31,label:'花果山',plot:0}
+];
+MAPS.sanxing.exits=[
+  {x:11,y:17,to:'fangcun',tx:19,ty:7,label:'方寸山',plot:0},
+  {x:12,y:17,to:'fangcun',tx:19,ty:7,label:'方寸山',plot:0},
+  {x:13,y:17,to:'fangcun',tx:19,ty:7,label:'方寸山',plot:0},
+  {x:14,y:17,to:'fangcun',tx:19,ty:7,label:'方寸山',plot:0}
+];
+MAPS.tianing.exits=[
+  {x:22,y:50,to:'huaguo',tx:44,ty:60,label:'下界·花果山',plot:0},
+  {x:23,y:50,to:'huaguo',tx:44,ty:60,label:'下界·花果山',plot:0},
+  {x:24,y:50,to:'huaguo',tx:44,ty:60,label:'下界·花果山',plot:0},
+  {x:25,y:50,to:'huaguo',tx:44,ty:60,label:'下界·花果山',plot:0},
+  {x:6,y:25,to:'doulv',tx:12,ty:16,label:'兜率宫',plot:8},
+  {x:6,y:26,to:'doulv',tx:12,ty:16,label:'兜率宫',plot:8},
+  {x:49,y:25,to:'yaochi',tx:25,ty:11,label:'瑶池',plot:8},
+  {x:49,y:26,to:'yaochi',tx:25,ty:11,label:'瑶池',plot:8},
+  {x:50,y:9,to:'bimawen',tx:13,ty:16,label:'御马监',plot:8}
+];
+MAPS.doulv.exits=[
+  {x:11,y:17,to:'tianing',tx:8,ty:25,label:'天宫',plot:0},
+  {x:12,y:17,to:'tianing',tx:8,ty:25,label:'天宫',plot:0},
+  {x:13,y:17,to:'tianing',tx:8,ty:25,label:'天宫',plot:0}
+];
+MAPS.bimawen.exits=[
+  {x:12,y:16,to:'tianing',tx:51,ty:10,label:'天宫',plot:0},
+  {x:13,y:16,to:'tianing',tx:51,ty:10,label:'天宫',plot:0},
+  {x:14,y:16,to:'tianing',tx:51,ty:10,label:'天宫',plot:0}
+];
+MAPS.yaochi.exits=[
+  {x:1,y:10,to:'tianing',tx:48,ty:26,label:'天宫',plot:0},
+  {x:1,y:11,to:'tianing',tx:48,ty:26,label:'天宫',plot:0},
+  {x:1,y:12,to:'tianing',tx:48,ty:26,label:'天宫',plot:0}
+];
+MAPS.wuzhi.exits=[{x:18,y:30,to:'huaguo',tx:44,ty:60,label:'花果山（自由游历）',plot:14}];
+
+/* ===== 修正层·补丁B：start 补齐 / 水帘洞入口 plot0 / 地府入口 / 太白招安 ===== */
+(function(){
+  const SS={shuilian:[19,28],backhill:[28,31],aolai:[19,46],coast:[20,3],palace:[21,46],
+    hell:[19,40],hellhall:[9,12],fangcun:[27,42],sanxing:[12,16],tianing:[23,50],
+    doulv:[12,16],bimawen:[13,16],yaochi:[25,11],wuzhi:[18,28]};
+  for(const k in SS)if(MAPS[k]&&!MAPS[k].start)MAPS[k].start={x:SS[k][0],y:SS[k][1]};
+  MAPS.huaguo.exits.forEach(e=>{if(e.to==='shuilian')e.plot=0;});
+  (MAPS.coast.exits=MAPS.coast.exits||[]).push({x:28,y:33,to:'hell',tx:19,ty:39,label:'幽冥地府',plot:6});
+  MAPS.coast.exits.push({x:29,y:33,to:'hell',tx:19,ty:39,label:'幽冥地府',plot:6});
+  if(!MAPS.huaguo.npcs.some(n=>n.dlg==='taibai1'))
+    MAPS.huaguo.npcs.push({x:44,y:59,spr:'taibai',dlg:'taibai1'});
+})();
