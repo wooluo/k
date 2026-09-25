@@ -3599,10 +3599,10 @@ function frame(ts){
 requestAnimationFrame(frame);
 
 /* ================= 在线排行榜 v1.5 ================= */
-const RR_API='http://139.180.137.242:8088';
+const RR_API=('https:'===location.protocol)?'https://139-180-137-242.sslip.io':'http://139.180.137.242:8088';
 const RR_VER=6;
 const RR_SK=['rrSec','etV15_','raiden','_2026'].join('');
-const RR_ONLINE=(function(){try{return !location.protocol.startsWith('https')&&typeof fetch==='function';}catch(_){return false;}})();
+const RR_ONLINE=(function(){try{return typeof fetch==='function';}catch(_){return false;}})();
 let rrNewVer=null;
 
 /* ---- 纯JS SHA-256/HMAC (老WebView无crypto.subtle时用) ---- */
