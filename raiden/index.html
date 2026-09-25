@@ -3146,9 +3146,9 @@ function drawPickup(p){
     ctx.restore();
     drawHeart(0,0,20,'#ff2e4d');
     ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-5,-4,3,0,TAU);ctx.fill();
-  }else if(p.type==='A'||p.type==='B'||p.type==='C'||p.type==='D'){
-    // 字母武器: 金字黑边大字母,一眼区分补给
-    const cfg={A:['#6f4f0f','#ffd23e'],B:['#5f1f5f','#ff7dff'],C:['#0f5f5f','#7dfff0'],D:['#6f0f2f','#ff7d9c']}[p.type];
+  }else if('ABCDEFG'.includes(p.type)){
+    // 字母武器: 亮字深底大字母,一眼区分补给 (v1.4: 补齐E/F/G配色,与HUD武器色一致)
+    const cfg={A:['#6f4f0f','#ffd23e'],B:['#5f1f5f','#ff7dff'],C:['#0f5f5f','#7dfff0'],D:['#6f0f2f','#ff7d9c'],E:['#0f5f3f','#9fffcf'],F:['#3f2f6f','#b0a0ff'],G:['#2f4f6f','#aad4ff']}[p.type];
     ctx.fillStyle=cfg[1];ctx.globalAlpha=0.28;ctx.beginPath();ctx.arc(0,0,22,0,TAU);ctx.fill();ctx.globalAlpha=1;
     ctx.fillStyle=cfg[0];ctx.fillRect(-13,-13,26,26);
     ctx.strokeStyle=cfg[1];ctx.lineWidth=2.5;ctx.strokeRect(-13,-13,26,26);
@@ -3376,6 +3376,7 @@ function render(){
     ctx.restore();
   }
   for(const w of wingmen)drawWingman(w);
+  for(const p of pickups)drawPickup(p); // v1.4修复: 道具绘制——上游自初版起drawPickup从未接入渲染循环,道具掉落隐形
   drawPlayerShip();
   drawPlayerLaser();
   // 敌弹(最上层保持可见)
