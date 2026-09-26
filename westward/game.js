@@ -1,14 +1,17 @@
 /* 主逻辑：状态·剧情机·存档（输入与渲染由 ui.js 承担） */
 const SKEY='westward_save_v1';
 const P={lv:1,hp:70,mp:25,hpmax:70,mpmax:25,atk:13,def:6,
-  exp:0,gold:30,items:{herb:3,peach:1},weapon:null,armor:null};
+  exp:0,gold:30,items:{herb:3,peach:1},weapon:null,armor:null,
+  stats:null,ach:{},skPts:0,skLv:{},gearBag:{}};
 const playerBuffs={insect:0};
 let plotStage=0,fought={},toastMsg='',toastT=0;
 
 function freshP(){
   const s=statsAt(1);
   Object.assign(P,{lv:1,hp:s.hp,mp:s.mp,hpmax:s.hp,mpmax:s.mp,atk:s.atk,def:s.def,
-    exp:0,gold:30,items:{herb:3,peach:1},weapon:null,armor:null});
+    exp:0,gold:30,items:{herb:3,peach:1},weapon:null,armor:null,
+    stats:{wins:0,bossKills:0,deaths:0,spent:0,maxFloor:0,kills:{}},
+    ach:{},skPts:0,skLv:{},gearBag:{}});
   plotStage=0;fought={};playerBuffs.insect=0;
 }
 const eqatk=()=>P.weapon?(GEARS[P.weapon].atk||0):0;
@@ -24,6 +27,8 @@ const Game={
       if(!d||!d.P)return false;
       freshP();
       Object.assign(P,d.P);plotStage=d.plot||0;fought=d.fought||{};
+      P.stats=P.stats||{wins:0,bossKills:0,deaths:0,spent:0,maxFloor:0,kills:{}};
+      P.ach=P.ach||{};P.skLv=P.skLv||{};P.gearBag=P.gearBag||{};P.skPts=P.skPts||0;
       Eng.visited=new Set(d.visited||['huaguo']);
       Eng.start(d.map||'huaguo',d.px,d.py);
       this.mode='field';
@@ -43,7 +48,9 @@ const Game={
       const s=statsAt(P.lv);
       P.hpmax=s.hp;P.mpmax=s.mp;P.atk=s.atk;P.def=s.def;
       P.hp=P.hpmax;P.mp=P.mpmax;
-      toast('升级！Lv.'+P.lv+' 气血法力全满');
+      P.skPts=(P.skPts||0)+1;
+      window.AUD&&AUD.sfx.levelup();
+      toast('升级！Lv.'+P.lv+' 气血法力全满·得1技能点');
     }
   },
   plotTo(n){if(plotStage<n){plotStage=n;this.save();}},
@@ -91,6 +98,10 @@ const Game={
     }
     else if(a==='hint_backhill'){toast('后山秘径入口在花果山北侧');}
     else if(a==='shop'){/* ui.js openShop */}
+    else if(a==='tower'){
+      if(window.Tower)Tower.enter();
+      else toast('万妖塔尚未开启');
+    }
     this.save();
   },
 
@@ -108,6 +119,7 @@ const Game={
 
   exitBattle(win){
     this.mode='field';Battle.active=false;
+    if(window.Tower&&Tower.climbing)Tower.stop(win?'中途撤出':'力竭被送出');
     if(!win){
       toast('眼前一黑……');
       setTimeout(()=>{

@@ -1,19 +1,19 @@
 /* data.js — 敌人、技能、道具、装备、数值表 */
 'use strict';
 const FOES={
-  wolf:    {name:'野狼',art:'wolf',hp:28,atk:11,def:3,exp:7,gold:6,skills:['咬']},
-  shanxiao:{name:'山魈',art:'shanxiao',hp:46,atk:15,def:5,exp:15,gold:12,skills:['抓挠']},
-  mowang:  {name:'混世魔王',art:'mowang',hp:220,atk:22,def:8,exp:130,gold:220,skills:['劈砍','黑风'],boss:true},
-  shrimp:  {name:'虾兵',art:'shrimp',hp:58,atk:17,def:7,exp:22,gold:18,skills:['刺击']},
-  crab:    {name:'蟹将',art:'crab',hp:95,atk:21,def:13,exp:40,gold:35,skills:['钳击','吐泡']},
-  yecha:   {name:'巡海夜叉',art:'yecha',hp:260,atk:27,def:12,exp:190,gold:320,skills:['叉击','水箭'],boss:true},
-  niutou:  {name:'牛头',art:'niutou',hp:120,atk:26,def:12,exp:62,gold:0,skills:['撞角']},
-  mamian:  {name:'马面',art:'mamian',hp:120,atk:26,def:12,exp:62,gold:0,skills:['踢踏']},
-  wuchang: {name:'黑白无常',art:'wuchang',hp:380,atk:32,def:15,exp:320,gold:0,skills:['勾魂','锁链'],boss:true},
-  yanwang: {name:'阎罗王',art:'yanwang',hp:680,atk:34,def:18,exp:520,gold:0,skills:['判笔','冥火'],boss:true},
-  jiaomo:  {name:'蛟魔王',art:'jiaomow',hp:150,atk:24,def:10,exp:100,gold:150,skills:['缠绞','水柱'],boss:true},
-  tianbing:{name:'天兵',art:'tianbing',hp:100,atk:28,def:16,exp:80,gold:60,skills:['枪击']},
-  erlang:  {name:'二郎神杨戬',art:'erlang',hp:900,atk:40,def:22,exp:999,gold:0,skills:['三尖两刃','哮天犬','天眼'],boss:true}
+  wolf:    {name:'野狼',art:'wolf',hp:28,atk:11,def:3,exp:7,gold:6,skills:['咬'],drop:{id:'herb',chance:.15}},
+  shanxiao:{name:'山魈',art:'shanxiao',hp:46,atk:15,def:5,exp:15,gold:12,skills:['抓挠'],drop:{id:'herb',chance:.2}},
+  mowang:  {name:'混世魔王',art:'mowang',hp:220,atk:22,def:8,exp:130,gold:220,skills:['劈砍','黑风'],boss:true,drop:{id:'bantao',chance:1}},
+  shrimp:  {name:'虾兵',art:'shrimp',hp:58,atk:17,def:7,exp:22,gold:18,skills:['刺击'],drop:{id:'pill',chance:.2}},
+  crab:    {name:'蟹将',art:'crab',hp:95,atk:21,def:13,exp:40,gold:35,skills:['钳击','吐泡'],drop:{id:'peach',chance:.18}},
+  yecha:   {name:'巡海夜叉',art:'yecha',hp:260,atk:27,def:12,exp:190,gold:320,skills:['叉击','水箭'],boss:true,drop:{id:'fork',chance:1}},
+  niutou:  {name:'牛头',art:'niutou',hp:120,atk:26,def:12,exp:62,gold:0,skills:['撞角'],drop:{id:'herb',chance:.25}},
+  mamian:  {name:'马面',art:'mamian',hp:120,atk:26,def:12,exp:62,gold:0,skills:['踢踏'],drop:{id:'herb',chance:.25}},
+  wuchang: {name:'黑白无常',art:'wuchang',hp:380,atk:32,def:15,exp:320,gold:0,skills:['勾魂','锁链'],boss:true,drop:{id:'wurobe',chance:1}},
+  yanwang: {name:'阎罗王',art:'yanwang',hp:680,atk:34,def:18,exp:520,gold:0,skills:['判笔','冥火'],boss:true,drop:{id:'judge',chance:1}},
+  jiaomo:  {name:'蛟魔王',art:'jiaomow',hp:150,atk:24,def:10,exp:100,gold:150,skills:['缠绞','水柱'],boss:true,drop:{id:'peach',chance:.6}},
+  tianbing:{name:'天兵',art:'tianbing',hp:100,atk:28,def:16,exp:80,gold:60,skills:['枪击'],drop:{id:'pill',chance:.15}},
+  erlang:  {name:'二郎神杨戬',art:'erlang',hp:900,atk:40,def:22,exp:999,gold:0,skills:['三尖两刃','哮天犬','天眼'],boss:true,drop:{id:'sanjian',chance:1}}
 };
 const SKILLS={
   punch:  {name:'棒击',mp:0,mult:1.0,type:'atk',lv:1,desc:'挥棒痛击，不耗法力'},
@@ -36,7 +36,11 @@ const GEARS={
   sword:  {name:'青锋剑',type:'weapon',atk:9,price:420,desc:'削铁如泥的凡间利器'},
   jingu:  {name:'定海神针·金箍棒',type:'weapon',atk:45,price:0,desc:'重一万三千五百斤，随心意变化'},
   leather:{name:'皮甲',type:'armor',def:3,price:80,desc:'虎皮缝制，花果山时尚'},
-  chain:  {name:'锁子甲',type:'armor',def:9,price:340,desc:'傲来国上将军同款'}
+  chain:  {name:'锁子甲',type:'armor',def:9,price:340,desc:'傲来国上将军同款'},
+  fork:   {name:'夜叉三股叉',type:'weapon',atk:18,price:0,desc:'巡海夜叉的兵刃，寒光凛凛（掉落限定）'},
+  judge:  {name:'判官笔',type:'weapon',atk:28,price:0,desc:'勾魂判官笔，一笔定生死（掉落限定）'},
+  sanjian:{name:'三尖两刃刀',type:'weapon',atk:55,price:0,desc:'二郎真君神兵，天下无双（掉落限定）'},
+  wurobe: {name:'无常袍',type:'armor',def:14,price:0,desc:'黑白无常的官袍，阴气森森（掉落限定）'}
 };
 const LVUP={ // 每级增量
   hp:14,mp:7,atk:3,def:2

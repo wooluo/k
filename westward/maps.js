@@ -88,7 +88,8 @@ MAPS.huaguo={
     {x:9,y:27,spr:'monkey',face:'right',dlg:'mk_c',move:false},
     {x:40,y:35,spr:'monkey',face:'down',dlg:'mk_train',move:true},
     {x:45,y:37,spr:'smallmk',face:'down',dlg:'mk_train2',move:false},
-    {x:47,y:33,spr:'monkey',face:'left',dlg:'mk_guard',move:false}
+    {x:47,y:33,spr:'monkey',face:'left',dlg:'mk_guard',move:false},
+    {x:33,y:12,spr:'L',face:'down',dlg:'tower_stele',move:false}
   ],
   encounter:{rate:0.10,mobs:['wolf','wolf','shanxiao']},
   start:{x:31,y:4}

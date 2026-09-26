@@ -233,7 +233,7 @@ function uiBattleAct(i){
   if(i===0)Battle.act('fight');
   else if(i===1)openSkillMenu();
   else if(i===2)openItemMenuBattle();
-  else Battle.act('flee');
+  else{window.AUD&&AUD.sfx.flee();Battle.act('flee');}
 }
 function openSkillMenu(){
   const sk=Battle.skills();
@@ -270,7 +270,7 @@ function closeSub(){$('submenu').style.display='none';}
 function openMenu(){
   Game.mode='menu';
   const sl=$('syslist');sl.innerHTML='';
-  [['状态',showStatus],['物品',useItemList],['装备',gearList],['筋斗云',cloudList],['存档',()=>{Game.save();toast('已存档');}],['关闭',closeMenu]]
+  [['状态',showStatus],['物品',useItemList],['装备',gearList],['图鉴',dexList],['成就',achList],['修炼',skillTrain],['筋斗云',cloudList],['音乐',toggleMute],['存档',()=>{Game.save();toast('已存档');}],['关闭',closeMenu]]
   .forEach(([s,fn])=>{
     const d=document.createElement('div');d.className='menu-item';d.textContent=s;
     d.addEventListener('pointerdown',e=>{e.stopPropagation();fn();});
@@ -280,12 +280,16 @@ function openMenu(){
 }
 function closeMenu(){$('sysmenu').style.display='none';}
 function showStatus(){
+  const kills=(P.stats&&P.stats.kills)||{};
+  const lit=Object.keys(kills).filter(k=>kills[k]>0).length;
   openSub('状态',[{k:1}],
     ()=>`Lv${P.lv}  攻${P.atk+eqatk()}  防${P.def+eqdef()}
 HP ${P.hp}/${P.hpmax}   MP ${P.mp}/${P.mpmax}
 经验 ${P.exp}/${expNext(P.lv)}   文钱 ${P.gold}
 武器 ${P.weapon?GEARS[P.weapon].name:'赤手空拳'}
-防具 ${P.armor?GEARS[P.armor].name:'布衣'}`,
+防具 ${P.armor?GEARS[P.armor].name:'布衣'}
+成就 ${Object.keys(P.ach||{}).length}/${ACHV.length}   技能点 ${P.skPts||0}
+万妖塔纪录 ${P.stats&&P.stats.maxFloor||0} 层   图鉴 ${lit}/${Object.keys(FOES).length}`,
     closeSub);
 }
 function useItemList(){
@@ -295,11 +299,91 @@ function useItemList(){
     it=>{useItemMenu(it.id);useItemList();});
 }
 function gearList(){
-  const gs=Object.values(GEARS).filter(g=>g.price>0);
-  openSub('装备库（背包内可换装）',[{k:1}],
-    ()=>'武器：'+(P.weapon?GEARS[P.weapon].name:'无')+'   防具：'+(P.armor?GEARS[P.armor].name:'无'),
-    closeSub);
+  const all=Object.keys(GEARS).map(id=>Object.assign({id},GEARS[id]));
+  openSub('装备（点选穿卸）',all,g=>{
+    const worn=P.weapon===g.id||P.armor===g.id;
+    const cnt=(P.gearBag&&P.gearBag[g.id])||0;
+    return (worn?'[已装] ':cnt>0?'[袋×'+cnt+'] ':'[未得] ')+g.name+'  '+(g.type==='weapon'?'攻+'+g.atk:'防+'+g.def);
+  },g=>{
+    const slot=g.type==='weapon'?'weapon':'armor';
+    if(P[slot]===g.id){ /* 卸下 */
+      P[slot]=null;P.gearBag[g.id]=(P.gearBag[g.id]||0)+1;
+      window.AUD&&AUD.sfx.item();toast('卸下 '+g.name);
+    }else if((P.gearBag[g.id]||0)>0){ /* 穿上，旧的回袋 */
+      const old=P[slot];
+      P[slot]=g.id;P.gearBag[g.id]--;
+      if(P.gearBag[g.id]<=0)delete P.gearBag[g.id];
+      if(old){P.gearBag[old]=(P.gearBag[old]||0)+1;}
+      window.AUD&&AUD.sfx.confirm();toast('装备 '+g.name);
+    }else{toast(g.name+'：尚未获得（闯万妖塔/击败妖王可掉落）');return;}
+    Game.save();gearList();
+  });
 }
+function dexList(){
+  const kills=(P.stats&&P.stats.kills)||{};
+  const arr=Object.keys(FOES).map(id=>Object.assign({id},FOES[id]));
+  const lit=arr.filter(f=>(kills[f.id]||0)>0).length;
+  openSub('妖怪图鉴 '+lit+'/'+arr.length,arr,
+    f=>(kills[f.id]||0)>0?f.name+'　击杀×'+kills[f.id]:'？？？',
+    ()=>{});
+}
+function achList(){
+  const got=Object.keys(P.ach||{}).length;
+  openSub('成就 '+got+'/'+ACHV.length,ACHV,
+    a=>((P.ach&&P.ach[a.id])?'★ ':'☆ ')+a.name+'　'+a.desc,
+    ()=>{});
+}
+function skillTrain(){
+  const arr=Object.keys(SKILLS).map(k=>Object.assign({id:k},SKILLS[k])).filter(s=>P.lv>=s.lv);
+  if(!arr.length){toast('尚无技能（随剧情习得）');return;}
+  openSub('技能修炼·剩余点 '+P.skPts,arr,
+    s=>{const u=(P.skLv[s.id]||1);
+      return s.name+' Lv'+u+(u>=9?'·圆满':'→'+(u+1))+'  '+(s.mult>0?'威力×'+(s.mult*(1+0.12*(u-1))).toFixed(2):'效果强化');},
+    s=>{
+      const u=(P.skLv[s.id]||1);
+      if(u>=9){toast(s.name+' 已修炼圆满');return;}
+      if((P.skPts||0)<=0){toast('技能点不足（升级获得）');return;}
+      P.skPts--;P.skLv[s.id]=u+1;
+      window.AUD&&AUD.sfx.levelup();
+      toast(s.name+' 修炼至 Lv'+(u+1));
+      Game.save();skillTrain();
+    });
+}
+function toggleMute(){
+  if(!window.AUD)return;
+  const m=AUD.toggle();
+  toast(m?'🔇 音乐音效：关':'🔊 音乐音效：开');
+}
+/* ---------- JUICE：飘字/屏震/震动/胜负横幅 ---------- */
+const JUICE=(function(){
+  let fx=null;
+  function ensure(){
+    if(!fx){fx=document.createElement('div');fx.id='fx';
+      const w=document.getElementById('wrap');if(w)w.appendChild(fx);}
+    return fx;
+  }
+  function pop(x,y,text,cls,dur){
+    const d=document.createElement('div');
+    d.className='fx-pop '+(cls||'');d.textContent=text;
+    d.style.left=x+'px';d.style.top=y+'px';
+    ensure().appendChild(d);
+    setTimeout(()=>d.remove(),dur||900);
+  }
+  function buzz(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
+  function shake(){
+    const w=document.getElementById('wrap');if(!w)return;
+    w.classList.remove('fx-shake');void w.offsetWidth;w.classList.add('fx-shake');
+    setTimeout(()=>w.classList.remove('fx-shake'),320);
+  }
+  const CX=()=>Math.round(innerWidth/2)-40;
+  return {
+    dmg(d,isCrit){pop(CX(),Math.round(innerHeight*0.26),'-'+d,isCrit?'fx-crit':'fx-dmg');shake();window.AUD&&AUD.sfx[isCrit?'crit':'hit']();buzz(isCrit?35:15);},
+    hurt(d){pop(CX(),Math.round(innerHeight*0.60),'-'+d,'fx-hurt');window.AUD&&AUD.sfx.hurt();buzz(45);},
+    win(){pop(CX(),Math.round(innerHeight*0.36),'胜','fx-banner',1300);window.AUD&&AUD.sfx.victory();buzz([50,30,60]);},
+    lose(){pop(CX(),Math.round(innerHeight*0.36),'败','fx-banner fx-lose',1300);window.AUD&&AUD.sfx.defeat();buzz(120);},
+  };
+})();
+window.JUICE=JUICE;
 function cloudList(){
   if(plotStage<4){toast('还不会筋斗云');return;}
   const arr=[...Eng.visited].map(id=>({id,name:MAPS[id].name}));
@@ -329,6 +413,11 @@ function bindPad(){
   });
   $('btnA').addEventListener('pointerdown',e=>{e.stopPropagation();actA();});
   $('btnB').addEventListener('pointerdown',e=>{e.stopPropagation();actB();});
+  /* 对话：点屏推进 */
+  const db=$('dlgbox');
+  if(db)db.addEventListener('pointerdown',e=>{e.stopPropagation();if(Game.mode==='dialog')dlgAdvance();});
+  /* 音频：首次手势解锁 AudioContext */
+  document.addEventListener('pointerdown',()=>{if(window.AUD){AUD.init();AUD.resume();}},{once:true});
 }
 function actA(){ /* 确认 */
   if(Game.mode==='title')return;
@@ -403,6 +492,11 @@ function loop(){
   if(Eng.map){
     if(Game.mode==='field'&&!Battle.active&&frame%24===0)Eng.updateFoes();
     drawScene();
+  }
+  /* BGM 三态自动切换（标题/野外/战斗） */
+  if(window.AUD){
+    const want=Game.mode==='title'?'title':(Battle.active?'battle':'field');
+    if(AUD.mode!==want)AUD.bgm(want);
   }
   hud();drawToast();drawDlg();drawBattle();
   if(toastT>0)toastT--;

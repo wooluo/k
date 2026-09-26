@@ -78,6 +78,22 @@ canvas#game{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
 #fade{position:absolute;inset:0;background:#000;opacity:1;pointer-events:none;z-index:60;transition:opacity .5s;}
 #toast{position:absolute;left:50%;top:16%;transform:translateX(-50%);background:rgba(10,8,20,.92);border:2px solid var(--gold);color:var(--gold);border-radius:6px;padding:8px 18px;font-size:14px;font-weight:700;z-index:55;display:none;white-space:nowrap;}
 #touchstart{position:absolute;inset:0;z-index:21;}
+/* ---------- v1.1.0 JUICE 飘字/屏震/面板滚动 ---------- */
+#fx{position:absolute;inset:0;pointer-events:none;z-index:58;overflow:hidden;}
+.fx-pop{position:absolute;font-family:KaiBrush;font-weight:900;text-shadow:0 2px 6px #000,0 0 12px rgba(0,0,0,.8);white-space:nowrap;}
+.fx-dmg{font-size:30px;color:#ffe9b0;animation:fxUp .9s ease-out both;}
+.fx-crit{font-size:44px;color:#ff5a3c;animation:fxUpCrit .9s ease-out both;}
+.fx-hurt{font-size:26px;color:#ff8080;animation:fxUp .9s ease-out both;}
+.fx-banner{font-size:74px;color:#ffd75e;letter-spacing:.1em;animation:fxBanner 1.3s ease-out both;}
+.fx-banner.fx-lose{color:#9fb4d8;}
+@keyframes fxUp{0%{opacity:0;transform:translateY(12px) scale(.7);}15%{opacity:1;transform:translateY(0) scale(1.15);}100%{opacity:0;transform:translateY(-56px) scale(1);}}
+@keyframes fxUpCrit{0%{opacity:0;transform:translateY(14px) scale(.5) rotate(-6deg);}18%{opacity:1;transform:translateY(0) scale(1.35) rotate(3deg);}100%{opacity:0;transform:translateY(-70px) scale(1.1) rotate(0);}}
+@keyframes fxBanner{0%{opacity:0;transform:scale(2.6);}22%{opacity:1;transform:scale(1);}75%{opacity:1;}100%{opacity:0;transform:scale(1.05);}}
+.fx-shake{animation:fxShake .3s linear;}
+@keyframes fxShake{0%,100%{transform:translate(0,0);}20%{transform:translate(-7px,3px);}40%{transform:translate(6px,-4px);}60%{transform:translate(-4px,2px);}80%{transform:translate(3px,-2px);}}
+#syslist,#sublist{max-height:56vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.bar i,#bfoehp i{transition:width .35s ease;}
+#tmute{position:absolute;right:14px;top:14px;width:40px;height:40px;border-radius:50%;background:rgba(10,8,20,.6);border:1.5px solid rgba(244,196,48,.5);color:#f4c430;font-size:18px;display:flex;align-items:center;justify-content:center;z-index:2;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -108,18 +124,28 @@ canvas#game{display:block;image-rendering:pixelated;image-rendering:crisp-edges;
       <div class="topt" id="tnew">新的旅程</div>
       <div class="topt" id="tcont" style="display:none">继续冒险</div>
     </div>
-    <div class="ver">像素回合制RPG · v1.0.1 · 离线可玩</div>
+    <div id="tmute">🔊</div>
+    <div class="ver">像素回合制RPG · v1.1.0 · 离线可玩</div>
   </div>
   <div id="toast"></div>
   <div id="fade"></div>
 </div></div>
+<script src="audio.js"></script>
 <script src="sprites.js"></script>
 <script src="data.js"></script>
+<script src="systems.js"></script>
 <script src="maps.js"></script>
 <script src="dialog.js"></script>
 <script src="engine.js"></script>
 <script src="battle.js"></script>
 <script src="game.js"></script>
 <script src="ui.js"></script>
+<script>
+(function(){var b=document.getElementById('tmute');
+try{b.textContent=localStorage.getItem('wd_mute')==='1'?'🔇':'🔊';}catch(e){}
+b.addEventListener('pointerdown',function(e){e.stopPropagation();
+if(!window.AUD)return;AUD.init();AUD.resume();
+b.textContent=AUD.toggle()?'🔇':'🔊';});})();
+</script>
 </body>
 </html>
