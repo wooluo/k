@@ -109,7 +109,7 @@ renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputEncoding=THREE.LinearEncoding;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.05;
+renderer.toneMappingExposure=0.82;
 var scene=new THREE.Scene();
 scene.fog=new THREE.FogExp2(0xf3a06b,0.00036);
 var camera=new THREE.PerspectiveCamera(62,window.innerWidth/window.innerHeight,0.5,9000);
@@ -126,7 +126,7 @@ dLight.shadow.bias=-0.0006;
 dLight.shadow.radius=8;
 scene.add(dLight);scene.add(dLight.target);
 scene.add(new THREE.HemisphereLight(0x8090c8,0x3a2c28,0.55));
-scene.add(new THREE.AmbientLight(0x664433,0.35));
+scene.add(new THREE.AmbientLight(0x664433,0.26));
 var rimLight=new THREE.DirectionalLight(0xffb36b,0.55);rimLight.position.set(90,60,-300);scene.add(rimLight);
 
 /* sky dome */
@@ -788,7 +788,7 @@ var composer=(function(){
   var c=new THREE.EffectComposer(renderer);
   c.setSize(window.innerWidth,window.innerHeight);
   c.addPass(new THREE.RenderPass(scene,camera));
-  var bloom=new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),1.05,0.75,0.5);
+  var bloom=new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),0.72,0.75,0.55);
   c.addPass(bloom);
   var gamma=new THREE.ShaderPass(THREE.GammaCorrectionShader);
   gamma.renderToScreen=true;
