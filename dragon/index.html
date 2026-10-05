@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>飞龙大海战</title>
+<style>
+html,body{margin:0;padding:0;overflow:hidden;background:#1a0e1e;height:100%;font-family:"Segoe UI",Arial,"Microsoft YaHei",sans-serif;user-select:none;-webkit-user-select:none}
+#c{display:block;width:100vw;height:100vh;cursor:crosshair}
+#vig{position:fixed;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse at center,transparent 55%,rgba(40,10,50,.38) 100%)}
+#dmg{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;box-shadow:inset 0 0 140px 50px rgba(255,30,10,.75);transition:opacity .12s}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;color:#ffe9c9;display:none}
+.panel{position:absolute;background:rgba(24,10,20,.55);border:1px solid rgba(255,200,140,.35);border-radius:8px;padding:8px 12px}
+#stats{top:14px;left:14px;width:230px}
+.lbl{font-size:12px;opacity:.85;letter-spacing:1px;margin-bottom:2px}
+.bar{height:13px;background:rgba(0,0,0,.5);border-radius:7px;overflow:hidden;margin-bottom:7px;border:1px solid rgba(255,255,255,.15)}
+.bar>i{display:block;height:100%;border-radius:7px;transition:width .15s}
+#hpF{background:linear-gradient(90deg,#ff5330,#ff9d3d);width:100%}
+#fuF{background:linear-gradient(90deg,#ffb42a,#ffe066);width:100%}
+#score{top:14px;right:14px;text-align:right;font-size:15px;line-height:1.7}
+#score b{font-size:22px;color:#ffd27a}
+#cross{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px}
+#cross:before,#cross:after{content:"";position:absolute;background:rgba(255,230,190,.9)}
+#cross:before{left:16px;top:4px;width:2px;height:26px}
+#cross:after{top:16px;left:4px;height:2px;width:26px}
+#cross.hot:before,#cross.hot:after{background:#ff7038;box-shadow:0 0 6px #ff5020}
+#hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-size:13px;opacity:.75;background:rgba(24,10,20,.45);padding:5px 14px;border-radius:12px}
+.bbar{position:absolute;width:64px;height:7px;margin-left:-32px;margin-top:-4px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.35);border-radius:4px;overflow:hidden;pointer-events:none}
+.bbar>i{display:block;height:100%;background:linear-gradient(90deg,#ff4433,#ffa040)}
+.ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(22,8,26,.62);backdrop-filter:blur(4px);z-index:30;color:#ffe9c9;text-align:center}
+.ov h1{font-size:44px;margin:0 0 8px;letter-spacing:6px;color:#ffd894;text-shadow:0 2px 18px rgba(255,120,40,.65),0 0 40px rgba(255,80,20,.4)}
+.ov h2{font-size:16px;font-weight:400;opacity:.9;margin:0 0 26px;letter-spacing:2px}
+.ctl{font-size:15px;line-height:2.1;background:rgba(10,4,14,.5);border:1px solid rgba(255,190,130,.3);padding:14px 34px;border-radius:12px;margin-bottom:26px}
+.ctl b{color:#ffc670;display:inline-block;min-width:120px;text-align:right;margin-right:12px}
+.go{font-size:20px;color:#fff;background:linear-gradient(180deg,#ff8a3d,#e2521f);padding:12px 52px;border-radius:26px;box-shadow:0 4px 22px rgba(255,110,30,.5);animation:pu 1.6s infinite}
+@keyframes pu{50%{transform:scale(1.05)}}
+#pause{display:none}
+#end{display:none}
+#end .r{margin-top:10px;font-size:14px;opacity:.8}
+.hide{display:none !important}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="vig"></div>
+<div id="dmg"></div>
+<div id="hud">
+  <div id="stats" class="panel">
+    <div class="lbl">🐉 龙</div>
+    <div class="bar"><i id="hpF"></i></div>
+    <div class="lbl">🔥 火焰</div>
+    <div class="bar"><i id="fuF"></i></div>
+  </div>
+  <div id="score" class="panel">击沉 <b id="kN">0</b> / 20<br><span id="wv" style="font-size:13px;opacity:.85">第 1 波</span></div>
+  <div id="cross"></div>
+  <div id="hint">W/S 前后 · A/D 侧移 · 空格/Shift 升降 · 按住左键喷火 · ESC 暂停</div>
+  <div id="bars"></div>
+</div>
+<div id="title" class="ov">
+  <h1>飞龙大海战</h1>
+  <h2>夕照之海 · 独龙战群帆</h2>
+  <div class="ctl">
+    <div><b>鼠标</b>视角 · <b style="min-width:0">按住左键</b>喷火</div>
+    <div><b>W / S</b>前进 / 减速</div>
+    <div><b>A / D</b>左 / 右侧移</div>
+    <div><b>空格 / Shift</b>上升 / 下降</div>
+    <div><b>目标</b>击沉 20 艘敌舰</div>
+    <div><b>危险</b>舰炮齐射 · 撞击 · 坠海</div>
+  </div>
+  <div class="go">点 击 开 战</div>
+</div>
+<div id="pause" class="ov"><h1>暂停</h1><div class="go">点击继续</div></div>
+<div id="end" class="ov"><h1 id="endT"></h1><h2 id="endS"></h2><div class="r">按 R 重新开战</div></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script>window.THREE||document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>');</script>
+<script>
+(function(){
+'use strict';
+function $(id){return document.getElementById(id);}
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+function lerp(a,b,t){return a+(b-a)*t;}
+function rnd(a,b){return a+Math.random()*(b-a);}
+function angW(a){while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return a;}
+
+var TARGET=20;
+var G={mode:'title',t:0,kills:0,hp:100,maxHp:100,fuel:100,fireHeld:false,dmgF:0,paused:false,ramCd:0,fuelWait:0,deadT:0};
+
+/* ---------- renderer / scene ---------- */
+var canvas=$('c');
+var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+var scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0xf3a06b,0.00036);
+var camera=new THREE.PerspectiveCamera(62,window.innerWidth/window.innerHeight,0.5,9000);
+
+/* sun / lights */
+var sunDir=new THREE.Vector3(-0.52,0.18,-0.82).normalize();
+var dLight=new THREE.DirectionalLight(0xffa552,1.25);
+dLight.castShadow=true;
+dLight.shadow.mapSize.set(2048,2048);
+dLight.shadow.camera.left=-300;dLight.shadow.camera.right=300;
+dLight.shadow.camera.top=300;dLight.shadow.camera.bottom=-300;
+dLight.shadow.camera.near=40;dLight.shadow.camera.far=1800;
+dLight.shadow.bias=-0.0006;
+dLight.shadow.radius=8;
+scene.add(dLight);scene.add(dLight.target);
+scene.add(new THREE.HemisphereLight(0x8090c8,0x3a2c28,0.55));
+scene.add(new THREE.AmbientLight(0x664433,0.35));
+
+/* sky dome */
+var sky=new THREE.Mesh(new THREE.SphereGeometry(3600,28,14),new THREE.ShaderMaterial({
+  side:THREE.BackSide,depthWrite:false,fog:false,
+  uniforms:{top:{value:new THREE.Color(0x2b497b)},hor:{value:new THREE.Color(0xffb36b)},sunD:{value:sunDir},sunC:{value:new THREE.Color(0xffd9a0)}},
+  vertexShader:'varying vec3 vD;void main(){vD=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+  fragmentShader:'uniform vec3 top,hor,sunD,sunC;varying vec3 vD;void main(){vec3 d=normalize(vD);float h=clamp(d.y*1.35+0.14,0.0,1.0);vec3 c=mix(hor,top,pow(h,0.62));float s=max(dot(d,sunD),0.0);c+=sunC*(pow(s,240.0)*1.3+pow(s,14.0)*0.38+pow(s,3.0)*0.12);gl_FragColor=vec4(c,1.0);}'
+}));
+scene.add(sky);
+var sunDisc=new THREE.Mesh(new THREE.CircleGeometry(130,32),new THREE.MeshBasicMaterial({color:0xffeab0,fog:false,depthWrite:false}));
+sunDisc.position.copy(sunDir).multiplyScalar(3100);sunDisc.lookAt(0,0,0);scene.add(sunDisc);
+var sunHalo=new THREE.Mesh(new THREE.CircleGeometry(330,32),new THREE.MeshBasicMaterial({color:0xffb060,fog:false,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,depthWrite:false}));
+sunHalo.position.copy(sunDir).multiplyScalar(3050);sunHalo.lookAt(0,0,0);scene.add(sunHalo);
+/* sun glitter path on water toward camera */
+var glitTex=(function(){
+  var cv=document.createElement('canvas');cv.width=64;cv.height=256;
+  var cx=cv.getContext('2d');
+  var gr=cx.createLinearGradient(0,0,0,256);
+  gr.addColorStop(0,'rgba(255,200,120,0.55)');
+  gr.addColorStop(0.5,'rgba(255,160,80,0.30)');
+  gr.addColorStop(1,'rgba(255,120,50,0)');
+  cx.fillStyle=gr;cx.fillRect(0,0,64,256);
+  var tx=cx.createLinearGradient(0,0,64,0);
+  tx.addColorStop(0,'rgba(0,0,0,1)');tx.addColorStop(0.25,'rgba(0,0,0,0)');
+  tx.addColorStop(0.75,'rgba(0,0,0,0)');tx.addColorStop(1,'rgba(0,0,0,1)');
+  cx.globalCompositeOperation='destination-out';cx.fillStyle=tx;cx.fillRect(0,0,64,256);
+  var t=new THREE.CanvasTexture(cv);return t;
+})();
+var glitGeo=new THREE.PlaneGeometry(320,780);
+glitGeo.rotateX(-Math.PI/2); /* flat: spans X(width) x Z(length toward sun) */
+var glitter=new THREE.Mesh(glitGeo,
+  new THREE.MeshBasicMaterial({map:glitTex,transparent:true,opacity:0.85,depthWrite:false,fog:false}));
+var sunH=new THREE.Vector3(sunDir.x,0,sunDir.z).normalize();
+glitter.rotation.y=Math.atan2(sunH.x,sunH.z);
+glitter.position.copy(sunH).multiplyScalar(400);glitter.position.y=2.6;
+scene.add(glitter);
+
+/* ---------- ocean ---------- */
+function waveH(x,z,t){return 1.35*Math.sin(x*0.017+t*0.9)+1.05*Math.sin(z*0.021+t*1.25)+0.7*Math.sin((x+z)*0.012+t*0.65)+0.45*Math.sin(x*0.052-z*0.031+t*1.7)+0.3*Math.sin(x*0.09+z*0.075+t*2.2)+0.22*Math.sin(x*0.13-z*0.11+t*2.8);}
+var seaGeo=new THREE.PlaneGeometry(5600,5600,120,120);
+seaGeo.rotateX(-Math.PI/2);
+var sea=new THREE.Mesh(seaGeo,new THREE.MeshPhongMaterial({color:0x16455f,specular:0xffc890,shininess:64,emissive:0x041520}));
+sea.receiveShadow=true;
+scene.add(sea);
+var seaPos=seaGeo.attributes.position;
+
+/* islands */
+var islG=[new THREE.ConeGeometry(48,34,7),new THREE.ConeGeometry(66,26,7),new THREE.ConeGeometry(30,44,6)];
+var islM=new THREE.MeshStandardMaterial({color:0x5c5044,roughness:1});
+var islM2=new THREE.MeshStandardMaterial({color:0x8a7a5c,roughness:1});
+[[620,-380,0],[ -780,520,1],[240,880,2],[-420,-820,0],[950,300,1]].forEach(function(p){
+  var g=new THREE.Group();
+  var c=new THREE.Mesh(islG[p[2]],islM);c.position.y=islG[p[2]].parameters.height/2-4;c.castShadow=true;g.add(c);
+  var s=new THREE.Mesh(new THREE.CylinderGeometry(islG[p[2]].parameters.radius*1.35,islG[p[2]].parameters.radius*1.55,3,10),islM2);s.position.y=-3;g.add(s);
+  g.position.set(p[0],0,p[1]);scene.add(g);
+});
+
+/* ---------- particles ---------- */
+function makePts(max,additive){
+  var geo=new THREE.BufferGeometry();
+  var pos=new Float32Array(max*3),col=new Float32Array(max*3),sz=new Float32Array(max),al=new Float32Array(max);
+  for(var i=0;i<max;i++)pos[i*3+1]=-9999;
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('aColor',new THREE.BufferAttribute(col,3));
+  geo.setAttribute('aSize',new THREE.BufferAttribute(sz,1));
+  geo.setAttribute('aAlpha',new THREE.BufferAttribute(al,1));
+  var mat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,
+    blending:additive?THREE.AdditiveBlending:THREE.NormalBlending,
+    vertexShader:'attribute float aSize;attribute float aAlpha;attribute vec3 aColor;varying float vA;varying vec3 vC;void main(){vA=aAlpha;vC=aColor;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=aSize*(460.0/max(1.0,-mv.z));gl_Position=projectionMatrix*mv;}',
+    fragmentShader:'varying float vA;varying vec3 vC;void main(){float r=length(gl_PointCoord-vec2(0.5));float m=smoothstep(0.5,0.06,r);gl_FragColor=vec4(vC,vA*m);}'});
+  var pts=new THREE.Points(geo,mat);pts.frustumCulled=false;scene.add(pts);
+  return {geo:geo,pos:pos,col:col,sz:sz,al:al,vx:new Float32Array(max),vy:new Float32Array(max),vz:new Float32Array(max),
+    age:new Float32Array(max),life:new Float32Array(max),s0:new Float32Array(max),grow:new Float32Array(max),buoy:new Float32Array(max),cur:0,max:max};
+}
+var fireP=makePts(1300,true),smokeP=makePts(450,false);
+function emit(P,x,y,z,vx,vy,vz,life,size,grow,r,g,b,buoy){
+  var i=P.cur;P.cur=(i+1)%P.max;
+  P.pos[i*3]=x;P.pos[i*3+1]=y;P.pos[i*3+2]=z;
+  P.col[i*3]=r;P.col[i*3+1]=g;P.col[i*3+2]=b;
+  P.vx[i]=vx;P.vy[i]=vy;P.vz[i]=vz;
+  P.age[i]=0;P.life[i]=life;P.s0[i]=size;P.grow[i]=grow;P.buoy[i]=buoy||0;P.sz[i]=size;P.al[i]=1;
+}
+function updPts(P,dt){
+  for(var i=0;i<P.max;i++){
+    if(P.life[i]<=0)continue;
+    P.age[i]+=dt;
+    if(P.age[i]>=P.life[i]){P.life[i]=0;P.al[i]=0;P.pos[i*3+1]=-9999;continue;}
+    var t=P.age[i]/P.life[i];
+    P.vy[i]+=P.buoy[i]*dt;
+    var dmp=1-1.4*dt;if(dmp<0)dmp=0;
+    P.vx[i]*=dmp;P.vz[i]*=dmp;
+    P.pos[i*3]+=P.vx[i]*dt;P.pos[i*3+1]+=P.vy[i]*dt;P.pos[i*3+2]+=P.vz[i]*dt;
+    P.al[i]=(1-t)*Math.min(1,t*7)*0.95;
+    P.sz[i]=P.s0[i]*(1+P.grow[i]*t);
+  }
+  P.geo.attributes.position.needsUpdate=true;
+  P.geo.attributes.aSize.needsUpdate=true;
+  P.geo.attributes.aAlpha.needsUpdate=true;
+  P.geo.attributes.aColor.needsUpdate=true;
+}
+function boom(x,y,z,big){
+  var n=big?42:18;
+  for(var i=0;i<n;i++){
+    var v=rnd(4,big?26:13),a=rnd(0,Math.PI*2),p=rnd(-0.4,1);
+    var c=Math.random();
+    if(c<0.4)emit(fireP,x,y,z,Math.cos(a)*v,p*v,Math.sin(a)*v,rnd(0.4,0.9),rnd(3,7),1.6,1,0.75,0.28,3);
+    else if(c<0.75)emit(fireP,x,y,z,Math.cos(a)*v*0.8,p*v*0.8,Math.sin(a)*v*0.8,rnd(0.5,1.1),rnd(3,6),2,1,0.42,0.1,2);
+    else emit(fireP,x,y,z,Math.cos(a)*v*0.6,p*v,Math.sin(a)*v*0.6,rnd(0.6,1.3),rnd(2,4),2,1,0.9,0.55,2);
+  }
+  for(i=0;i<(big?22:9);i++){
+    var v2=rnd(2,big?11:6),a2=rnd(0,Math.PI*2);
+    emit(smokeP,x+rnd(-3,3),y+rnd(0,4),z+rnd(-3,3),Math.cos(a2)*v2,rnd(2,7),Math.sin(a2)*v2,rnd(1.5,3),rnd(5,10),2.2,0.16,0.14,0.13,2.5);
+  }
+  boomLight.position.set(x,y+6,z);boomLight.intensity=big?6:2.5;boomT=big?0.5:0.25;
+}
+var boomLight=new THREE.PointLight(0xff8830,0,220);scene.add(boomLight);
+var boomT=0;
+function splash(x,z,n){
+  for(var i=0;i<n;i++){var a=rnd(0,Math.PI*2),v=rnd(3,12);
+    emit(fireP,x,0.5,z,Math.cos(a)*v,rnd(6,17),Math.sin(a)*v,rnd(0.4,0.8),rnd(2,4),1.2,0.65,0.82,0.95,-14);}
+}
+
+/* ---------- dragon ---------- */
+var bodyMat=new THREE.MeshStandardMaterial({color:0x9e2b1e,roughness:0.55,metalness:0.12});
+var bellyMat=new THREE.MeshStandardMaterial({color:0xc98d5a,roughness:0.7});
+var membMat=new THREE.MeshStandardMaterial({color:0xe8754a,roughness:0.5,side:THREE.DoubleSide,emissive:0x6e1f0c,emissiveIntensity:1.0});
+var hornMat=new THREE.MeshStandardMaterial({color:0x3a2c22,roughness:0.8});
+var eyeMat=new THREE.MeshStandardMaterial({color:0xffc233,emissive:0xff9018,emissiveIntensity:1.6});
+/* wing membrane: scalloped bat-wing built from chained triangles */
+var wingGeo=(function(){
+  var v=new Float32Array([
+    /*0 root front*/ 0,0.1,1.4,  /*1 root back*/ 0,0,-1.0,
+    /*2 arm tip*/ 3.4,0.7,-1.9,
+    /*3 finger1 tip*/ 6.2,1.15,0.9, /*4 scallop1*/ 5.1,0.7,-0.9,
+    /*5 finger2 tip*/ 8.8,1.5,2.4, /*6 scallop2*/ 7.6,1.05,0.4,
+    /*7 wing tip*/ 11.6,1.9,-0.8]);
+  var g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(v,3));
+  g.setIndex([
+    0,1,2, 0,2,3, 2,4,3, 3,4,5, 4,6,5, 5,6,7,
+    1,2,0, 2,3,0, 3,4,2, 4,5,3, 6,5,4, 6,7,5]);
+  g.computeVertexNormals();return g;
+})();
+var dragon=new THREE.Group();
+dragon.rotation.order='YXZ';
+var dBody=new THREE.Group();dragon.add(dBody);
+(function(){
+  /* torso: two overlapping capsules for a smooth body silhouette */
+  var b1=new THREE.Mesh(new THREE.SphereGeometry(1,14,12),bodyMat);
+  b1.scale.set(1.9,1.75,3.1);b1.castShadow=true;dBody.add(b1);
+  var b2=new THREE.Mesh(new THREE.SphereGeometry(1,12,11),bodyMat);
+  b2.scale.set(1.35,1.3,3.0);b2.position.z=3.4;b2.castShadow=true;dBody.add(b2);
+  var be=new THREE.Mesh(new THREE.SphereGeometry(1,12,10),bellyMat);
+  be.scale.set(1.45,0.72,3.3);be.position.y=-1.05;be.castShadow=true;dBody.add(be);
+  /* neck: 4 tapering spheres rising toward the head */
+  [[0,-0.6,-4.3,1.05],[0,0.15,-5.3,0.88],[0,0.8,-6.2,0.72],[0,1.35,-7.0,0.58]].forEach(function(p){
+    var n=new THREE.Mesh(new THREE.SphereGeometry(p[3],10,9),bodyMat);
+    n.position.set(p[0],p[1],p[2]);n.castShadow=true;dBody.add(n);
+  });
+  var head=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.15,2.5),bodyMat);head.position.set(0,1.55,-8.3);head.castShadow=true;dBody.add(head);
+  var jaw=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.5,1.8),bellyMat);jaw.position.set(0,1.05,-9.1);dBody.add(jaw);
+  var h1=new THREE.Mesh(new THREE.ConeGeometry(0.22,1.5,6),hornMat);h1.position.set(0.45,2.3,-7.6);h1.rotation.x=0.9;dBody.add(h1);
+  var h2=h1.clone();h2.position.x=-0.45;dBody.add(h2);
+  var e1=new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8),eyeMat);e1.position.set(0.55,1.85,-8.9);dBody.add(e1);
+  var e2=e1.clone();e2.position.x=-0.55;dBody.add(e2);
+  /* legs tucked along the flanks */
+  [[1.55,-1.0,0.2],[-1.55,-1.0,0.2],[1.3,-1.0,2.6],[-1.3,-1.0,2.6]].forEach(function(p){
+    var l=new THREE.Mesh(new THREE.BoxGeometry(0.55,1.1,1.0),bodyMat);l.position.set(p[0],p[1],p[2]);l.rotation.x=0.5;l.rotation.z=p[0]>0?0.35:-0.35;l.castShadow=true;dBody.add(l);
+  });
+  dBody.userData.head=head;dBody.userData.jaw=jaw;
+})();
+/* tail */
+var tailSegs=[];
+(function(){
+  /* long whippy tail: 6 tapering spheres, half the body length */
+  var P=[[0,-0.5,5.4,1.05],[0,-1.05,7.0,0.82],[0,-1.55,8.6,0.62],[0,-2.0,10.2,0.46],[0,-2.35,11.8,0.32],[0,-2.6,13.2,0.2]];
+  for(var i=0;i<P.length;i++){
+    var m=new THREE.Mesh(new THREE.SphereGeometry(P[i][3],9,8),bodyMat);
+    m.position.set(P[i][0],P[i][1],P[i][2]);m.userData.by=P[i][1];m.userData.bz=P[i][2];m.castShadow=true;dBody.add(m);tailSegs.push(m);
+  }
+  var fin=new THREE.Mesh(new THREE.ConeGeometry(0.34,1.0,4),membMat);
+  fin.position.set(0,-2.6,14.0);fin.rotation.x=-1.15;dBody.add(fin);
+})();
+/* wings */
+var wingR=new THREE.Group(),wingL=new THREE.Group();
+wingR.position.set(1.1,1.15,-0.2);wingL.position.set(-1.1,1.15,-0.2);
+var wR=new THREE.Mesh(wingGeo,membMat);wR.castShadow=true;wR.scale.setScalar(1.7);wingR.add(wR);
+var wL=new THREE.Mesh(wingGeo,membMat);wL.castShadow=true;wL.scale.setScalar(1.7);wingL.add(wL);
+wingL.scale.x=-1;
+dragon.add(wingR);dragon.add(wingL);
+var flameLight=new THREE.PointLight(0xff7a20,0,90);
+flameLight.position.set(0,1.05,-8);dragon.add(flameLight);
+dragon.scale.setScalar(1.75);
+scene.add(dragon);
+
+/* dragon state */
+var dr={pos:new THREE.Vector3(0,46,150),vel:new THREE.Vector3(),yaw:0,pitch:0,roll:0,flap:0,prevYaw:0};
+var cam={yaw:0,pitch:-0.1,dist:27,pos:new THREE.Vector3(0,52,190)};
+function viewDir(){
+  var cp=Math.cos(cam.pitch);
+  return new THREE.Vector3(Math.sin(cam.yaw)*cp,Math.sin(cam.pitch),-Math.cos(cam.yaw)*cp);
+}
+var mouthV=new THREE.Vector3();
+
+/* ---------- boats ---------- */
+var hullG=new THREE.BoxGeometry(5.2,3.2,15);
+var deckG=new THREE.BoxGeometry(4.2,0.7,13);
+var bowG=(function(){var g=new THREE.ConeGeometry(2.55,4.6,4);g.rotateZ(Math.PI/4);g.rotateY(Math.PI/4);return g;})();
+var mastG=new THREE.CylinderGeometry(0.22,0.32,15,7);
+var sailG=new THREE.PlaneGeometry(7.2,9.4);
+var sail2G=new THREE.PlaneGeometry(3.4,5.4);
+var flagG=new THREE.PlaneGeometry(2.2,1.1);
+var canG=new THREE.CylinderGeometry(0.35,0.45,2.2,6);
+var hullM=new THREE.MeshStandardMaterial({color:0x5a3a24,roughness:0.85});
+var deckM=new THREE.MeshStandardMaterial({color:0x8a6a44,roughness:0.9});
+var sailM=new THREE.MeshStandardMaterial({color:0xf3e6cc,roughness:0.9,side:THREE.DoubleSide});
+var sail2M=new THREE.MeshStandardMaterial({color:0xe8d5b0,roughness:0.9,side:THREE.DoubleSide});
+var flagM=new THREE.MeshStandardMaterial({color:0xa02525,roughness:0.8,side:THREE.DoubleSide});
+var mastM=new THREE.MeshStandardMaterial({color:0x3a2a1a,roughness:0.9});
+var boats=[];
+function makeBoat(){
+  var g=new THREE.Group();
+  var hull=new THREE.Mesh(hullG,hullM);hull.position.y=1.2;hull.castShadow=true;g.add(hull);
+  var deck=new THREE.Mesh(deckG,deckM);deck.position.y=3;deck.castShadow=true;g.add(deck);
+  var bow=new THREE.Mesh(bowG,hullM);bow.position.set(0,1.2,9.4);bow.rotation.x=-Math.PI/2;bow.rotation.y=Math.PI/4;bow.castShadow=true;g.add(bow);
+  var mast=new THREE.Mesh(mastG,mastM);mast.position.set(0,10.5,-1);mast.castShadow=true;g.add(mast);
+  var sail=new THREE.Mesh(sailG,sailM);sail.position.set(0.06,9.6,-0.7);sail.rotation.y=Math.PI/2;sail.castShadow=true;g.add(sail);
+  var jib=new THREE.Mesh(sail2G,sail2M);jib.position.set(0.05,7.2,5.6);jib.rotation.y=Math.PI/2;g.add(jib);
+  var flag=new THREE.Mesh(flagG,flagM);flag.position.set(1.1,17.6,-1);g.add(flag);
+  [[2.9,3],[2.9,-2],[-2.9,3],[-2.9,-2]].forEach(function(p){
+    var cn=new THREE.Mesh(canG,mastM);cn.rotation.z=Math.PI/2;cn.position.set(p[0]*1.05,3.1,p[1]);g.add(cn);
+  });
+  g.userData.flag=flag;
+  return g;
+}
+function spawnBoat(near){
+  var g=makeBoat(),b={g:g,hp:100+wave()*6,maxHp:100+wave()*6,heading:rnd(0,Math.PI*2),speed:rnd(4.5,7),wanderT:rnd(1,3),fireT:rnd(1.5,3.5),burnT:0,sinking:0,phase:rnd(0,9)};
+  if(near){
+    var d=viewDir();
+    b.g.position.set(dr.pos.x+d.x*170+rnd(-40,40),0,dr.pos.z+d.z*170+rnd(-40,40));
+    b.heading=Math.atan2(dr.pos.x-b.g.position.x,-(dr.pos.z-b.g.position.z))+rnd(-0.6,0.6);
+  }else{
+    var a=rnd(0,Math.PI*2),r=rnd(480,850);
+    b.g.position.set(dr.pos.x+Math.cos(a)*r,0,dr.pos.z+Math.sin(a)*r);
+    b.heading=Math.atan2(dr.pos.x-b.g.position.x,-(dr.pos.z-b.g.position.z))+rnd(-1.1,1.1);
+  }
+  b.g.rotation.y=b.heading;
+  scene.add(b.g);boats.push(b);
+  return b;
+}
+function wave(){return 1+Math.floor(G.kills/5);}
+function boatTarget(){return Math.min(9,3+Math.floor(G.kills/3));}
+
+/* cannonballs */
+var balls=[];
+var ballG=new THREE.SphereGeometry(0.95,8,8);
+var ballM=new THREE.MeshStandardMaterial({color:0x24211e,roughness:0.5,metalness:0.3});
+function fireBall(b){
+  var muz=new THREE.Vector3(b.g.position.x,6.5,b.g.position.z);
+  var tgt=dr.pos.clone().addScaledVector(dr.vel,0.55);
+  var dir=tgt.sub(muz).normalize();
+  dir.x+=rnd(-0.035,0.035);dir.y+=rnd(-0.02,0.04);dir.z+=rnd(-0.035,0.035);dir.normalize();
+  var mesh=new THREE.Mesh(ballG,ballM);mesh.position.copy(muz);scene.add(mesh);
+  balls.push({m:mesh,v:dir.multiplyScalar(80),age:0});
+  emit(fireP,muz.x,muz.y,muz.z,dir.x*6,dir.y*6+2,dir.z*6,0.25,3.5,0.5,1,0.7,0.3,0);
+  emit(smokeP,muz.x,muz.y,muz.z,rnd(-2,2),3,rnd(-2,2),1.2,4,2,0.2,0.18,0.16,1.5);
+}
+
+/* ---------- HUD ---------- */
+var hpF=$('hpF'),fuF=$('fuF'),kN=$('kN'),wv=$('wv'),dmgEl=$('dmg'),cross=$('cross'),barsEl=$('bars');
+var barDivs=[];
+for(var bi=0;bi<12;bi++){
+  var d=document.createElement('div');d.className='bbar';d.style.display='none';
+  var f=document.createElement('i');d.appendChild(f);barsEl.appendChild(d);barDivs.push({d:d,f:f});
+}
+function updateHUD(){
+  hpF.style.width=(G.hp/G.maxHp*100)+'%';
+  fuF.style.width=G.fuel+'%';
+  kN.textContent=G.kills;
+  wv.textContent='第 '+wave()+' 波 · 敌舰 '+boats.length;
+  var i=0;
+  for(var j=0;j<boats.length&&i<12;j++){
+    var b=boats[j];if(b.sinking)continue;
+    var v=new THREE.Vector3(b.g.position.x,20,b.g.position.z);
+    var dist=v.distanceTo(camera.position);if(dist>650)continue;
+    v.project(camera);
+    if(v.z>1||v.x<-1.1||v.x>1.1||v.y<-1.1||v.y>1.1)continue;
+    var bd=barDivs[i++];
+    bd.d.style.display='block';
+    bd.d.style.left=((v.x*0.5+0.5)*window.innerWidth)+'px';
+    bd.d.style.top=((-v.y*0.5+0.5)*window.innerHeight)+'px';
+    bd.f.style.width=(b.hp/b.maxHp*100)+'%';
+  }
+  for(;i<12;i++)barDivs[i].d.style.display='none';
+}
+
+/* ---------- input ---------- */
+var keys={};
+document.addEventListener('keydown',function(e){
+  keys[e.code]=true;
+  if(e.code==='Space')e.preventDefault();
+  if(e.code==='KeyR'&&(G.mode==='win'||G.mode==='over'))location.reload();
+});
+document.addEventListener('keyup',function(e){keys[e.code]=false;});
+var dragging=false;
+document.addEventListener('mousedown',function(e){
+  if(e.button!==0)return;
+  if(G.mode==='play'&&!G.paused){G.fireHeld=true;dragging=true;}
+});
+document.addEventListener('mouseup',function(e){if(e.button===0){G.fireHeld=false;dragging=false;}});
+document.addEventListener('mousemove',function(e){
+  if(G.mode!=='play'||G.paused)return;
+  var mx=0,my=0;
+  if(document.pointerLockElement===canvas){mx=e.movementX||0;my=e.movementY||0;}
+  else if(dragging){mx=e.movementX||0;my=e.movementY||0;}
+  else return;
+  cam.yaw+=mx*0.0022;
+  cam.pitch=clamp(cam.pitch-my*0.0022,-1.25,1.0);
+});
+document.addEventListener('pointerlockchange',function(){
+  if(G.mode==='play'){
+    if(document.pointerLockElement!==canvas&&!G.paused){G.paused=true;$('pause').style.display='flex';}
+  }
+});
+$('pause').addEventListener('click',function(){
+  G.paused=false;$('pause').style.display='none';
+  if(canvas.requestPointerLock)canvas.requestPointerLock();
+});
+$('title').addEventListener('click',function(){
+  $('title').style.display='none';$('hud').style.display='block';
+  G.mode='play';
+  if(canvas.requestPointerLock)canvas.requestPointerLock();
+  for(var i=0;i<3;i++)spawnBoat(false);
+});
+window.addEventListener('resize',function(){
+  camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+/* ---------- combat ---------- */
+var tmpV=new THREE.Vector3(),tmpV2=new THREE.Vector3();
+function hurtDragon(d){
+  if(G.mode!=='play')return;
+  G.hp-=d;G.dmgF=1;
+  if(G.hp<=0){G.hp=0;gameOver(false);}
+}
+function killBoat(b){
+  b.sinking=0.001;
+  boom(b.g.position.x,5,b.g.position.z,true);
+  splash(b.g.position.x,b.g.position.z,14);
+  G.kills++;
+  if(G.kills>=TARGET)gameOver(true);
+}
+function gameOver(win){
+  G.mode=win?'win':'over';
+  G.fireHeld=false;
+  if(document.exitPointerLock)document.exitPointerLock();
+  $('endT').textContent=win?'胜 利':'巨 龙 陨 落';
+  $('endT').style.color=win?'#9fffb0':'#ff8080';
+  $('endS').textContent=win?'夕照之海的领空，从此属于你。':'击沉 '+G.kills+' 艘敌舰 · 按 R 复仇';
+  $('end').style.display='flex';
+}
+
+/* ---------- update ---------- */
+function update(dt){
+  G.t+=dt;
+  var t=G.t;
+  /* sea */
+  for(var i=0;i<seaPos.count;i++){
+    var x=seaPos.getX(i),z=seaPos.getZ(i);
+    seaPos.setY(i,waveH(x,z,t));
+  }
+  seaPos.needsUpdate=true;
+  seaGeo.computeVertexNormals();
+  sea.position.set(dr.pos.x,0,dr.pos.z);
+  sky.position.copy(camera.position);
+  if(boomT>0){boomT-=dt;boomLight.intensity*=Math.pow(0.001,dt);if(boomT<=0)boomLight.intensity=0;}
+
+  if(G.mode==='title'){
+    dr.pos.z-=8*dt;dr.pos.y=46+Math.sin(t*0.5)*2.5;
+    dr.yaw=0;dr.pitch=0;
+    cam.yaw=t*0.12;cam.pitch=-0.08;
+  }
+
+  var playing=(G.mode==='play');
+
+  if(playing){
+    /* movement */
+    var dir=viewDir();
+    var right=tmpV2.set(-dir.z,0,dir.x).normalize();
+    var acc=62;
+    if(keys.KeyW)dr.vel.addScaledVector(dir,acc*dt);
+    if(keys.KeyS)dr.vel.addScaledVector(dir,-acc*0.6*dt);
+    if(keys.KeyA)dr.vel.addScaledVector(right,-acc*0.75*dt);
+    if(keys.KeyD)dr.vel.addScaledVector(right,acc*0.75*dt);
+    if(keys.Space)dr.vel.y+=48*dt;
+    if(keys.ShiftLeft||keys.ShiftRight)dr.vel.y-=48*dt;
+    dr.vel.multiplyScalar(Math.max(0,1-1.15*dt));
+    var spd=dr.vel.length();
+    if(spd>48){dr.vel.multiplyScalar(48/spd);spd=48;}
+    dr.pos.addScaledVector(dr.vel,dt);
+    /* bounds */
+    var rr=Math.sqrt(dr.pos.x*dr.pos.x+dr.pos.z*dr.pos.z);
+    if(rr>1500){dr.vel.addScaledVector(tmpV.set(-dr.pos.x,0,-dr.pos.z).normalize(),40*dt);}
+    if(dr.pos.y>280){dr.pos.y=280;dr.vel.y=Math.min(dr.vel.y,0);}
+    /* water */
+    var wh=waveH(dr.pos.x,dr.pos.z,t);
+    if(dr.pos.y<wh+4){
+      dr.pos.y=wh+4;dr.vel.y=Math.max(dr.vel.y,14);
+      hurtDragon(9);splash(dr.pos.x,dr.pos.z,10);
+    }
+    /* fire breath */
+    var wantFire=G.fireHeld&&G.fuel>2;
+    if(wantFire){
+      G.fuel=Math.max(0,G.fuel-26*dt);G.fuelWait=0.55;
+      dBody.userData.head.getWorldPosition(mouthV);
+      mouthV.addScaledVector(dir,2.2);
+      for(var fp=0;fp<7;fp++){
+        var sp=52+rnd(0,16);
+        emit(fireP,mouthV.x+rnd(-0.6,0.6),mouthV.y+rnd(-0.4,0.7),mouthV.z+rnd(-0.6,0.6),
+          dir.x*sp+dr.vel.x*0.55+rnd(-5,5),dir.y*sp+dr.vel.y*0.55+rnd(-3,5),dir.z*sp+dr.vel.z*0.55+rnd(-5,5),
+          rnd(0.5,0.85),rnd(2.6,4.4),2.2,
+          Math.random()<0.5?1:1,Math.random()<0.5?0.72:0.45,Math.random()<0.5?0.3:0.1,4);
+      }
+      flameLight.intensity=2.4+Math.sin(t*42)*0.7;
+      /* cone damage */
+      var hot=false;
+      for(var bi2=0;bi2<boats.length;bi2++){
+        var bb=boats[bi2];if(bb.sinking)continue;
+        tmpV.set(bb.g.position.x-mouthV.x,7-mouthV.y,bb.g.position.z-mouthV.z);
+        var dd=tmpV.length();
+        if(dd<140&&tmpV.normalize().dot(dir)>0.88){
+          bb.hp-=60*dt;bb.burnT=2;hot=true;
+          if(bb.hp<=0)killBoat(bb);
+        }
+      }
+      cross.className=hot?'hot':'';
+    }else{
+      flameLight.intensity=0;
+      cross.className='';
+      if(G.fuelWait>0)G.fuelWait-=dt;
+      else G.fuel=Math.min(100,G.fuel+22*dt);
+    }
+    G.ramCd-=dt;
+    /* ram collision */
+    for(var bi3=0;bi3<boats.length;bi3++){
+      var bo=boats[bi3];if(bo.sinking)continue;
+      if(dr.pos.distanceTo(tmpV.set(bo.g.position.x,8,bo.g.position.z))<15&&G.ramCd<=0){
+        G.ramCd=0.9;
+        hurtDragon(16);
+        dr.vel.addScaledVector(tmpV2.subVectors(dr.pos,tmpV).normalize(),55);
+        bo.hp-=75;
+        boom(bo.g.position.x,6,bo.g.position.z,false);
+        if(bo.hp<=0)killBoat(bo);
+      }
+    }
+    /* spawn */
+    var alive=0;for(var s2=0;s2<boats.length;s2++)if(!boats[s2].sinking)alive++;
+    if(alive<boatTarget())spawnBoat(Math.random()<0.35);
+  }
+
+  /* dragon visuals */
+  dr.prevYaw=dr.yaw;
+  var tyaw=cam.yaw,tpit=clamp(cam.pitch*0.55+(dr.vel.y*Math.max(0,Math.abs(dr.vel.length()))*0.002),-0.9,0.9);
+  if(G.mode==='title'){tyaw=0;tpit=0;}
+  if(G.mode==='over'){tyaw=dr.yaw;tpit=dr.pitch-0.8*dt;}
+  dr.yaw+=angW(tyaw-dr.yaw)*Math.min(1,6*dt);
+  dr.pitch=lerp(dr.pitch,tpit,Math.min(1,5*dt));
+  var yawRate=angW(dr.yaw-dr.prevYaw)/Math.max(dt,0.001);
+  dr.roll=lerp(dr.roll,clamp(-yawRate*0.55,-0.95,0.95),Math.min(1,4*dt));
+  dragon.position.copy(dr.pos);
+  dragon.rotation.y=-dr.yaw;
+  dragon.rotation.x=dr.pitch;
+  dragon.rotation.z=dr.roll;
+  if(G.mode==='over'){dragon.rotation.z+=dt*2.2;dr.vel.y-=25*dt;dr.pos.addScaledVector(dr.vel,dt);
+    var wh2=waveH(dr.pos.x,dr.pos.z,t);
+    if(dr.pos.y<wh2+2){dr.pos.y=wh2+2;splash(dr.pos.x,dr.pos.z,20);dr.vel.set(0,0,0);}}
+  dr.flap+=dt*(5.2+dr.vel.length()*0.12);
+  var flap=Math.sin(dr.flap)*0.55+0.18;
+  wingR.rotation.z=flap;wingL.rotation.z=-flap;
+  for(var ts=0;ts<tailSegs.length;ts++){var tm=tailSegs[ts];tm.position.y=tm.userData.by+Math.sin(t*1.6-ts*0.55)*0.12;tm.position.x=Math.sin(t*1.3-ts*0.5)*0.14;}
+  dBody.userData.jaw.rotation.x=(G.fireHeld&&playing)?0.45:0;
+
+  /* boats */
+  for(var b4=boats.length-1;b4>=0;b4--){
+    var bt=boats[b4];
+    var bg=bt.g;
+    if(bt.sinking){
+      bt.sinking+=dt;
+      bg.rotation.z+=dt*0.28;bg.rotation.x+=dt*0.12;
+      bg.position.y-=dt*2.4;
+      if(Math.random()<0.4)emit(smokeP,bg.position.x,3,bg.position.z,rnd(-1,1),3,rnd(-1,1),1.6,6,2,0.13,0.12,0.11,2);
+      if(bg.position.y<-16){scene.remove(bg);boats.splice(b4,1);}
+      continue;
+    }
+    /* AI */
+    bt.wanderT-=dt;
+    if(bt.wanderT<=0){bt.wanderT=rnd(2,5);bt.heading+=rnd(-1.2,1.2);}
+    var br=Math.sqrt(bg.position.x*bg.position.x+bg.position.z*bg.position.z);
+    if(br>1250){
+      var home=Math.atan2(-bg.position.x,bg.position.z)+Math.PI;
+      bt.heading+=angW(home-bt.heading)*Math.min(1,1.5*dt)*2;
+    }
+    bg.position.x+=Math.sin(bt.heading)*bt.speed*dt;
+    bg.position.z+=Math.cos(bt.heading)*bt.speed*dt;
+    bg.rotation.y=bt.heading;
+    /* bob */
+    var bx=bg.position.x,bz=bg.position.z;
+    bg.position.y=waveH(bx,bz,t)*0.55+0.6;
+    bg.rotation.x=Math.sin(t*0.9+bt.phase)*0.05;
+    bg.rotation.z=Math.sin(t*0.7+bt.phase*2)*0.05;
+    bg.userData.flag.rotation.y=Math.sin(t*3+bt.phase)*0.4;
+    /* burn */
+    if(bt.burnT>0){
+      bt.burnT-=dt;
+      if(Math.random()<0.5)emit(smokeP,bx+rnd(-2,2),8,bz+rnd(-5,5),rnd(-1,1),rnd(2,5),rnd(-1,1),rnd(1,2),rnd(4,7),1.8,0.12,0.11,0.1,2);
+      if(Math.random()<0.3)emit(fireP,bx+rnd(-2,2),6,bz+rnd(-4,4),rnd(-1,1),rnd(2,5),rnd(-1,1),0.5,3,0.5,1,0.5,0.15,2);
+    }
+    /* fire at dragon */
+    if(playing){
+      bt.fireT-=dt;
+      var dd2=Math.sqrt((dr.pos.x-bx)*(dr.pos.x-bx)+(dr.pos.z-bz)*(dr.pos.z-bz));
+      if(bt.fireT<=0&&dd2<400&&dr.pos.y<220){
+        fireBall(bt);
+        bt.fireT=rnd(2.4,4.4)-Math.min(1.2,wave()*0.18);
+      }
+    }
+  }
+
+  /* balls */
+  for(var b5=balls.length-1;b5>=0;b5--){
+    var bl=balls[b5];
+    bl.age+=dt;
+    bl.v.y-=6*dt;
+    bl.m.position.addScaledVector(bl.v,dt);
+    if(Math.random()<0.25)emit(smokeP,bl.m.position.x,bl.m.position.y,bl.m.position.z,0,0.5,0,0.5,1.6,1,0.2,0.19,0.18,0);
+    var kill=false;
+    if(bl.m.position.y<waveH(bl.m.position.x,bl.m.position.z,t)){
+      splash(bl.m.position.x,bl.m.position.z,6);kill=true;
+    }else if(playing&&bl.m.position.distanceTo(dr.pos)<6.5){
+      hurtDragon(12);kill=true;
+      boom(bl.m.position.x,bl.m.position.y,bl.m.position.z,false);
+    }
+    if(kill||bl.age>7){scene.remove(bl.m);balls.splice(b5,1);}
+  }
+
+  /* particles */
+  updPts(fireP,dt);
+  updPts(smokeP,dt);
+
+  /* camera */
+  var cdir=viewDir();
+  var tgt=tmpV.copy(dr.pos).addScaledVector(cdir,-cam.dist);tgt.y+=6.5;
+  var ewh=waveH(tgt.x,tgt.z,t)+3;
+  if(tgt.y<ewh)tgt.y=ewh;
+  cam.pos.lerp(tgt,1-Math.pow(0.0001,dt));
+  camera.position.copy(cam.pos);
+  tmpV2.copy(dr.pos).addScaledVector(cdir,16);
+  camera.lookAt(tmpV2);
+
+  /* shadow light follows dragon */
+  dLight.position.copy(dr.pos).addScaledVector(sunDir,700);
+  dLight.target.position.copy(dr.pos);
+  dLight.target.updateMatrixWorld();
+
+  if(playing||G.mode==='title')updateHUD();
+
+  /* dmg vignette */
+  if(G.dmgF>0){G.dmgF-=dt*2.2;if(G.dmgF<0)G.dmgF=0;}
+  var vg=G.dmgF*0.85+(G.hp<30&&playing?(0.18+Math.sin(t*6)*0.1):0);
+  dmgEl.style.opacity=vg.toFixed(3);
+}
+
+/* ---------- loop ---------- */
+var lastT=performance.now();
+function frame(now){
+  var dt=Math.min(0.05,(now-lastT)/1000);lastT=now;
+  if(!G.paused)update(dt);
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------- dev/test hook (removed before release) ---------- */
+window.__errs=[];
+window.onerror=function(m,s,l){window.__errs.push(String(m)+' @'+l);};
+window.__DBG={
+  G:G,
+  get boats(){return boats;},
+  get balls(){return balls;},
+  get dr(){return dr;},
+  get cam(){return cam;},
+  get camera(){return camera;},
+  get scene(){return scene;},
+  get renderer(){return renderer;},
+  start:function(){$('title').style.display='none';$('hud').style.display='block';G.mode='play';for(var i=0;i<3;i++)spawnBoat(false);},
+  step:function(n,dt){for(var i=0;i<n;i++)update(dt||0.016);renderer.render(scene,camera);},
+  fire:function(on){G.fireHeld=on;},
+  aimAt:function(x,y,z){var v=new THREE.Vector3(x-dr.pos.x,y-dr.pos.y,z-dr.pos.z).normalize();cam.yaw=Math.atan2(v.x,-v.z);cam.pitch=Math.asin(clamp(v.y,-1,1));},
+  spawnNear:function(){return spawnBoat(true);},
+  stats:function(){return {mode:G.mode,kills:G.kills,hp:G.hp,fuel:G.fuel,boats:boats.length,balls:balls.length,tris:renderer.info.render.triangles,drs:dr.pos.toArray(),errs:window.__errs};}
+};
+})();
+</script>
+</body>
+</html>
