@@ -2,11 +2,17 @@
 <html lang="zh">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
 <title>飞龙大海战</title>
 <style>
-html,body{margin:0;padding:0;overflow:hidden;background:#1a0e1e;height:100%;font-family:"Segoe UI",Arial,"Microsoft YaHei",sans-serif;user-select:none;-webkit-user-select:none}
-#c{display:block;width:100vw;height:100vh;cursor:crosshair}
+html,body{margin:0;padding:0;overflow:hidden;background:#1a0e1e;height:100%;position:fixed;width:100%;font-family:"Segoe UI",Arial,"Microsoft YaHei",sans-serif;user-select:none;-webkit-user-select:none}
+#c{display:block;width:100vw;height:100vh;cursor:crosshair;touch-action:none}
+#stick{position:fixed;z-index:20;width:150px;height:150px;border-radius:50%;background:rgba(24,10,20,.35);border:1px solid rgba(255,200,140,.4);display:none;pointer-events:none}
+#stickKnob{position:absolute;left:50%;top:50%;width:64px;height:64px;border-radius:50%;background:rgba(255,200,140,.5);border:2px solid rgba(255,230,180,.8);transform:translate(-50%,-50%)}
+#fireBtn{position:fixed;z-index:20;right:24px;bottom:38px;width:92px;height:92px;border-radius:50%;background:radial-gradient(circle,rgba(255,120,50,.5),rgba(180,40,10,.55));border:2px solid rgba(255,200,140,.6);display:none;align-items:center;justify-content:center;color:#ffe9c9;font-size:22px;letter-spacing:2px;font-weight:bold;pointer-events:auto;user-select:none;-webkit-user-select:none;touch-action:none}
+#fireBtn:active{background:radial-gradient(circle,rgba(255,160,80,.75),rgba(220,70,20,.8))}
+@media (hover:hover) and (pointer:fine){#stick,#fireBtn{display:none !important}}
 #vig{position:fixed;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse at center,transparent 55%,rgba(40,10,50,.38) 100%)}
 #dmg{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;box-shadow:inset 0 0 140px 50px rgba(255,30,10,.75);transition:opacity .12s}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:10;color:#ffe9c9;display:none}
@@ -96,7 +102,8 @@ var G={mode:'title',t:0,kills:0,hp:100,maxHp:100,fuel:100,fireHeld:false,dmgF:0,
 /* ---------- renderer / scene ---------- */
 var canvas=$('c');
 var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+var isTouchDev=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,isTouchDev?1.5:2));
 renderer.setSize(window.innerWidth,window.innerHeight);
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -455,7 +462,7 @@ document.addEventListener('mousemove',function(e){
 });
 document.addEventListener('pointerlockchange',function(){
   if(G.mode==='play'){
-    if(document.pointerLockElement!==canvas&&!G.paused){G.paused=true;$('pause').style.display='flex';}
+    if(document.pointerLockElement!==canvas&&!G.paused){G.paused=true;$('pause').style.display='flex';refreshTouchUI();}
   }
 });
 $('pause').addEventListener('click',function(){
@@ -465,9 +472,76 @@ $('pause').addEventListener('click',function(){
 $('title').addEventListener('click',function(){
   $('title').style.display='none';$('hud').style.display='block';
   G.mode='play';
-  if(canvas.requestPointerLock)canvas.requestPointerLock();
+  if(touchUI)refreshTouchUI();else if(canvas.requestPointerLock)canvas.requestPointerLock();
   for(var i=0;i<3;i++)spawnBoat(false);
 });
+/* ---------- touch controls ---------- */
+var isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+var touchUI=window.__TOUCH!==undefined?window.__TOUCH:isTouch;
+var stickX=0,stickY=0,stickMag=0,fireTouch=false,touchId=null,stickCx=0,stickCy=0;
+function refreshTouchUI(){
+  var show=touchUI&&(G.mode==='play'&&!G.paused);
+  $('stick').style.display=show?'block':'none';
+  $('fireBtn').style.display=show?'flex':'none';
+}
+var stickEl,fireBtnEl;
+if(touchUI){
+  stickEl=document.createElement('div');stickEl.id='stick';
+  stickEl.innerHTML='<div id="stickKnob"></div>';document.body.appendChild(stickEl);
+  fireBtnEl=document.createElement('div');fireBtnEl.id='fireBtn';fireBtnEl.textContent='FIRE';document.body.appendChild(fireBtnEl);
+  fireBtnEl.addEventListener('pointerdown',function(e){e.preventDefault();fireTouch=true;G.fireHeld=true;});
+  var fireOff=function(){fireTouch=false;G.fireHeld=false;};
+  fireBtnEl.addEventListener('pointerup',fireOff);
+  fireBtnEl.addEventListener('pointercancel',fireOff);
+  fireBtnEl.addEventListener('pointerleave',function(){if(fireTouch){fireTouch=false;G.fireHeld=false;}});
+  canvas.addEventListener('pointerdown',function(e){
+    if(!touchUI||e.pointerType==='mouse')return;
+    if(G.mode!=='play'||G.paused)return;
+    if(touchId!==null)return;
+    e.preventDefault();
+    touchId=e.pointerId;
+    stickCx=e.clientX;stickCy=e.clientY;
+    stickEl.style.left=(stickCx-75)+'px';stickEl.style.top=(stickCy-75)+'px';
+    stickEl.style.display='block';
+  });
+  canvas.addEventListener('pointermove',function(e){
+    if(!touchUI||e.pointerId!==touchId)return;
+    e.preventDefault();
+    var dx=e.clientX-stickCx,dy=e.clientY-stickCy;
+    var len=Math.hypot(dx,dy),max=55;
+    if(len>max){dx*=max/len;dy*=max/len;len=max;}
+    stickMag=Math.min(len/max,1);stickX=dx/max;stickY=dy/max;
+    var k=document.getElementById('stickKnob');
+    if(k)k.style.transform='translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px))';
+  });
+  var stickEnd=function(e){
+    if(e.pointerId!==touchId)return;
+    touchId=null;stickX=0;stickY=0;stickMag=0;
+    var k=document.getElementById('stickKnob');
+    if(k)k.style.transform='translate(-50%,-50%)';
+    stickEl.style.display='none';
+  };
+  canvas.addEventListener('pointerup',stickEnd);
+  canvas.addEventListener('pointercancel',stickEnd);
+  /* touch start & restart (title/end use DOM listeners; end panel covers screen) */
+  $('title').addEventListener('touchstart',function(){},{passive:true});
+  $('end').addEventListener('touchstart',function(e){
+    if(G.mode==='win'||G.mode==='over'){e.preventDefault();location.reload();}
+  },{passive:false});
+  $('pause').addEventListener('touchstart',function(e){
+    e.preventDefault();e.stopPropagation();
+    G.paused=false;$('pause').style.display='none';refreshTouchUI();
+  },{passive:false});
+}
+function touchInput(dt){
+  if(!touchUI||stickMag<0.12)return;
+  var dir=viewDir(),right=tmpV2.set(-dir.z,0,dir.x).normalize();
+  var acc=62*stickMag;
+  dr.vel.addScaledVector(dir,acc*(stickY*-1)*dt);
+  dr.vel.addScaledVector(right,acc*stickX*dt);
+  if(Math.abs(stickY)>0.55)dr.vel.y+=(stickY<0?48:-48)*dt*Math.min(1,(Math.abs(stickY)-0.55)/0.3);
+}
+
 window.addEventListener('resize',function(){
   camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth,window.innerHeight);
@@ -490,7 +564,7 @@ function killBoat(b){
 }
 function gameOver(win){
   G.mode=win?'win':'over';
-  G.fireHeld=false;
+  G.fireHeld=false;refreshTouchUI();
   if(document.exitPointerLock)document.exitPointerLock();
   $('endT').textContent=win?'胜 利':'巨 龙 陨 落';
   $('endT').style.color=win?'#9fffb0':'#ff8080';
@@ -532,6 +606,7 @@ function update(dt){
     if(keys.KeyD)dr.vel.addScaledVector(right,acc*0.75*dt);
     if(keys.Space)dr.vel.y+=48*dt;
     if(keys.ShiftLeft||keys.ShiftRight)dr.vel.y-=48*dt;
+    touchInput(dt);
     dr.vel.multiplyScalar(Math.max(0,1-1.15*dt));
     var spd=dr.vel.length();
     if(spd>48){dr.vel.multiplyScalar(48/spd);spd=48;}
@@ -734,6 +809,7 @@ window.__errs=[];
 window.onerror=function(m,s,l){window.__errs.push(String(m)+' @'+l);};
 window.__DBG={
   G:G,
+  get touch(){return {touchUI:touchUI,stickX:stickX,stickY:stickY,stickMag:stickMag,fireTouch:fireTouch};},
   get boats(){return boats;},
   get balls(){return balls;},
   get dr(){return dr;},
