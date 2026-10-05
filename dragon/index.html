@@ -73,6 +73,14 @@ html,body{margin:0;padding:0;overflow:hidden;background:#1a0e1e;height:100%;font
 <div id="end" class="ov"><h1 id="endT"></h1><h2 id="endS"></h2><div class="r">按 R 重新开战</div></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script>window.THREE||document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>');</script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/GammaCorrectionShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script>(window.THREE&&THREE.EffectComposer)||document.write('<script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"><\/script><script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"><\/script><script src="https://unpkg.com/three@0.128.0/examples/js/shaders/GammaCorrectionShader.js"><\/script><script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"><\/script><script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"><\/script><script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"><\/script><script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"><\/script>');</script>
 <script>
 (function(){
 'use strict';
@@ -92,7 +100,9 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 renderer.setSize(window.innerWidth,window.innerHeight);
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.outputEncoding=THREE.LinearEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.05;
 var scene=new THREE.Scene();
 scene.fog=new THREE.FogExp2(0xf3a06b,0.00036);
 var camera=new THREE.PerspectiveCamera(62,window.innerWidth/window.innerHeight,0.5,9000);
@@ -110,6 +120,7 @@ dLight.shadow.radius=8;
 scene.add(dLight);scene.add(dLight.target);
 scene.add(new THREE.HemisphereLight(0x8090c8,0x3a2c28,0.55));
 scene.add(new THREE.AmbientLight(0x664433,0.35));
+var rimLight=new THREE.DirectionalLight(0xffb36b,0.55);rimLight.position.set(90,60,-300);scene.add(rimLight);
 
 /* sky dome */
 var sky=new THREE.Mesh(new THREE.SphereGeometry(3600,28,14),new THREE.ShaderMaterial({
@@ -141,7 +152,7 @@ var glitTex=(function(){
 var glitGeo=new THREE.PlaneGeometry(320,780);
 glitGeo.rotateX(-Math.PI/2); /* flat: spans X(width) x Z(length toward sun) */
 var glitter=new THREE.Mesh(glitGeo,
-  new THREE.MeshBasicMaterial({map:glitTex,transparent:true,opacity:0.85,depthWrite:false,fog:false}));
+  new THREE.MeshBasicMaterial({map:glitTex,transparent:true,opacity:0.5,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}));
 var sunH=new THREE.Vector3(sunDir.x,0,sunDir.z).normalize();
 glitter.rotation.y=Math.atan2(sunH.x,sunH.z);
 glitter.position.copy(sunH).multiplyScalar(400);glitter.position.y=2.6;
@@ -149,12 +160,25 @@ scene.add(glitter);
 
 /* ---------- ocean ---------- */
 function waveH(x,z,t){return 1.35*Math.sin(x*0.017+t*0.9)+1.05*Math.sin(z*0.021+t*1.25)+0.7*Math.sin((x+z)*0.012+t*0.65)+0.45*Math.sin(x*0.052-z*0.031+t*1.7)+0.3*Math.sin(x*0.09+z*0.075+t*2.2)+0.22*Math.sin(x*0.13-z*0.11+t*2.8);}
-var seaGeo=new THREE.PlaneGeometry(5600,5600,120,120);
+var seaGeo=new THREE.PlaneGeometry(5600,5600,240,240);
 seaGeo.rotateX(-Math.PI/2);
-var sea=new THREE.Mesh(seaGeo,new THREE.MeshPhongMaterial({color:0x16455f,specular:0xffc890,shininess:64,emissive:0x041520}));
+var seaMat=new THREE.MeshStandardMaterial({color:0x0d3a52,roughness:0.42,metalness:0.15,envMapIntensity:0.4});
+var sea=new THREE.Mesh(seaGeo,seaMat);
 sea.receiveShadow=true;
 scene.add(sea);
 var seaPos=seaGeo.attributes.position;
+
+/* env reflections (sunset sky): render sky into a cube RT once at startup */
+var envRT=(function(){
+  var cube=new THREE.WebGLCubeRenderTarget(128,{generateMipmaps:true,minFilter:THREE.LinearMipmapLinearFilter});
+  var cam=new THREE.CubeCamera(1,10000,cube);
+  cam.position.set(0,26,0);
+  sunDisc.visible=false;sunHalo.visible=false;glitter.visible=false;sea.visible=false;
+  cam.update(renderer,scene);
+  sunDisc.visible=true;sunHalo.visible=true;glitter.visible=true;sea.visible=true;
+  scene.environment=cube.texture;
+  return cube;
+})();
 
 /* islands */
 var islG=[new THREE.ConeGeometry(48,34,7),new THREE.ConeGeometry(66,26,7),new THREE.ConeGeometry(30,44,6)];
@@ -235,7 +259,7 @@ function splash(x,z,n){
 /* ---------- dragon ---------- */
 var bodyMat=new THREE.MeshStandardMaterial({color:0x9e2b1e,roughness:0.55,metalness:0.12});
 var bellyMat=new THREE.MeshStandardMaterial({color:0xc98d5a,roughness:0.7});
-var membMat=new THREE.MeshStandardMaterial({color:0xe8754a,roughness:0.5,side:THREE.DoubleSide,emissive:0x6e1f0c,emissiveIntensity:1.0});
+var membMat=new THREE.MeshStandardMaterial({color:0xe8754a,roughness:0.45,metalness:0.05,side:THREE.DoubleSide,emissive:0x6e1f0c,emissiveIntensity:1.0});
 var hornMat=new THREE.MeshStandardMaterial({color:0x3a2c22,roughness:0.8});
 var eyeMat=new THREE.MeshStandardMaterial({color:0xffc233,emissive:0xff9018,emissiveIntensity:1.6});
 /* wing membrane: scalloped bat-wing built from chained triangles */
@@ -447,6 +471,7 @@ $('title').addEventListener('click',function(){
 window.addEventListener('resize',function(){
   camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth,window.innerHeight);
+  if(composer)composer.setSize(window.innerWidth,window.innerHeight);
 });
 
 /* ---------- combat ---------- */
@@ -684,11 +709,22 @@ function update(dt){
 }
 
 /* ---------- loop ---------- */
+var composer=(function(){
+  var c=new THREE.EffectComposer(renderer);
+  c.setSize(window.innerWidth,window.innerHeight);
+  c.addPass(new THREE.RenderPass(scene,camera));
+  var bloom=new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),1.05,0.75,0.5);
+  c.addPass(bloom);
+  var gamma=new THREE.ShaderPass(THREE.GammaCorrectionShader);
+  gamma.renderToScreen=true;
+  c.addPass(gamma);
+  return c;
+})();
 var lastT=performance.now();
 function frame(now){
   var dt=Math.min(0.05,(now-lastT)/1000);lastT=now;
   if(!G.paused)update(dt);
-  renderer.render(scene,camera);
+  composer.render();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -706,7 +742,7 @@ window.__DBG={
   get scene(){return scene;},
   get renderer(){return renderer;},
   start:function(){$('title').style.display='none';$('hud').style.display='block';G.mode='play';for(var i=0;i<3;i++)spawnBoat(false);},
-  step:function(n,dt){for(var i=0;i<n;i++)update(dt||0.016);renderer.render(scene,camera);},
+  step:function(n,dt){for(var i=0;i<n;i++)update(dt||0.016);if(composer)composer.render();else renderer.render(scene,camera);},
   fire:function(on){G.fireHeld=on;},
   aimAt:function(x,y,z){var v=new THREE.Vector3(x-dr.pos.x,y-dr.pos.y,z-dr.pos.z).normalize();cam.yaw=Math.atan2(v.x,-v.z);cam.pitch=Math.asin(clamp(v.y,-1,1));},
   spawnNear:function(){return spawnBoat(true);},
